@@ -5,6 +5,7 @@ import type { Receipt, StoredRule } from "../../src/agent/store.ts";
 import { evaluateMod, executeMod, lastCloseMod, parseMod, rwa, web3api, type WebStore } from "./shared/src";
 import { REFERENCE_HOLDING_USD } from "./reference";
 import { quoteLeg } from "./quote-leg";
+import { pickVersion, type Pick } from "./pick";
 import { loadRepoEnv, REPO_DATA_DIR } from "./shared/server-env";
 import { DAY, usSegments } from "./night";
 
@@ -43,6 +44,9 @@ export interface RuleView {
   lastClose: { price: number; symbol: string; day: string } | null;
   trigger: { price: number | null };
   sizing: Sizing;
+  /** The version the agent would act on if the rule fired now, and why. null when nothing can trade. */
+  pick: Pick | null;
+  pickNote: string | null;
   standing: string;
   versions: VersionRow[];
   at: number;
@@ -209,10 +213,11 @@ export async function inspectRule(text: string, wallet?: string): Promise<RuleVi
     triggerPrice = lastClose.price * (1 + (rule.trigger.direction === "down" ? -1 : 1) * rule.trigger.pct / 100);
   }
 
-  return { text: first, parsedBy: by, rule, sentence: describeRule(rule), windowNote: win.note, lastClose, trigger: { price: triggerPrice }, sizing, standing, versions: rows, at: now };
+  return { text: first, parsedBy: by, rule, sentence: describeRule(rule), windowNote: win.note, lastClose, trigger: { price: triggerPrice }, sizing, ...(lastClose ? pickVersion(rule, lastClose.price, prices, statusBySymbol, rows, sizing, evaluate, now) : { pick: null, pickNote: "The last close is unavailable, so the version the agent would pick cannot be computed." }), standing, versions: rows, at: now };
 }
 
 type Probe = VersionRow["probe"];
+
 
 async function probeAll(versions: StockVersion[], prices: VersionPrice[], sizing: Sizing, wallet?: string): Promise<Probe[]> {
   const { side, usd: amountUsd } = sizing;
