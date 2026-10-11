@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ui-craft working files, not shipped
+/design-research/
+.uicraft-read.json

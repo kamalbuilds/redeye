@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Instrument_Sans, Spectral } from "next/font/google";
+import { Courier_Prime, Geist, Instrument_Serif } from "next/font/google";
 import { Masthead } from "@/components/shared/masthead";
 import { Colophon } from "@/components/shared/colophon";
 import { REDEYE_NAME } from "@/lib/redeye";
 import "./globals.css";
 
-const sans = Instrument_Sans({ subsets: ["latin"], variable: "--font-instrument", display: "swap" });
-const serif = Spectral({ subsets: ["latin"], weight: ["300", "400", "500"], variable: "--font-spectral", display: "swap" });
-const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono", display: "swap" });
+const sans = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+const serif = Instrument_Serif({ subsets: ["latin"], weight: "400", style: "normal", variable: "--font-instrument-serif", display: "swap" });
+const mono = Courier_Prime({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-courier-prime", display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: `${REDEYE_NAME}: rules that act on the US session while you sleep`, template: `%s | ${REDEYE_NAME}` },
-  description: "Write a rule in plain English before bed. Redeye watches every tokenized version of the stock on BNB Chain through US after-hours and acts on the best one that can trade.",
+  description: "Leave a rule before bed. Redeye watches every tokenized version of the stock on BNB Chain through US after-hours and acts on the best one that can trade.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -21,18 +21,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Masthead
           name={REDEYE_NAME}
           home="/"
-          descriptor="Overnight rules for tokenized US stocks"
           nav={[
-            { href: "/", label: "Rule", exact: true },
-            { href: "/proof", label: "Proof" },
+            { href: "/", label: "Tonight", exact: true },
+            { href: "/proof", label: "Replay" },
           ]}
         />
         {children}
         <Colophon
+          statement="This page quotes and reads. It never holds a key that can sign."
           lines={[
             { term: "Prices", text: "Per-share prices and market status come from Binance Web3 public RWA endpoints, read when you press the button. Ondo prices computed from the stock quote are marked." },
             { term: "Tradable now", text: "A real quote request goes to the Binance Web3 Trading API for each version at your rule's size. A version that returns a route is tradable; one that returns an error says why." },
-            { term: "Signing", text: "This page quotes and reads. It never holds a key that can sign; the agent executes with the Binance Agentic Wallet inside the daily limit you set." },
+            { term: "Session hours", text: "US premarket 4:00 to 9:30 am, regular 9:30 am to 4:00 pm, after-hours 4:00 to 8:00 pm, New York time, converted with the New York daylight-saving rules." },
           ]}
         />
       </body>
