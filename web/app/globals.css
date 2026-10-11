@@ -1,0 +1,160 @@
+/* Hallmark · macrostructure: Index-First statement ledger · tone: austere · anchor hue: teal 170
+ * theme: Almanac (night edition for the proof band) · nav: N6 masthead strip · footer: Ft4 dense colophon
+ * display: Spectral · body: Instrument Sans · figures: Geist Mono
+ */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --paper: #ECEFF1;
+  --paper-2: #E1E6E9;
+  --rule: #BFC8CE;
+  --ink: #121C26;
+  --ink-2: #3A4856;
+  --ink-3: #566574;
+  --signal: #0E6B5A;
+  --signal-ink: #F3F7F6;
+  --warn: #8A5A00;
+  --stop: #9A3A2B;
+  --night: #101822;
+  --night-2: #182331;
+  --night-rule: #2A3846;
+  --bone: #E6E3D8;
+  --bone-2: #A3AFBA;
+  --series-ondo: #BE862B;
+  --series-bstocks: #5C8FE0;
+  --series-real: #2FA88B;
+
+  /* shadcn semantic names, mapped onto the Almanac tokens */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--paper);
+  --card-foreground: var(--ink);
+  --popover: var(--paper);
+  --popover-foreground: var(--ink);
+  --primary: var(--signal);
+  --primary-foreground: var(--signal-ink);
+  --secondary: var(--paper-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--paper-2);
+  --muted-foreground: var(--ink-3);
+  --accent: var(--paper-2);
+  --accent-foreground: var(--ink);
+  --destructive: var(--stop);
+  --border: var(--rule);
+  --input: var(--rule);
+  --ring: var(--signal);
+  --radius: 0.25rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-rule: var(--rule);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-signal: var(--signal);
+  --color-warn: var(--warn);
+  --color-stop: var(--stop);
+  --color-night: var(--night);
+  --color-night-2: var(--night-2);
+  --color-night-rule: var(--night-rule);
+  --color-bone: var(--bone);
+  --color-bone-2: var(--bone-2);
+
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-spectral), ui-serif, Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-heading: var(--font-serif);
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    overflow-x: clip;
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+  :focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+  }
+  h1, h2, h3 {
+    @apply font-serif;
+    font-style: normal;
+    overflow-wrap: anywhere;
+  }
+  ::selection {
+    background: var(--signal);
+    color: var(--signal-ink);
+  }
+}
+
+@layer components {
+  .label {
+    @apply font-mono text-[0.75rem] uppercase tracking-[0.08em] text-ink-3;
+  }
+  .fig {
+    @apply font-mono tabular-nums;
+  }
+  .rule-double {
+    border-bottom: 3px double var(--rule);
+  }
+  .rise {
+    animation: rise 180ms ease-out both;
+    animation-delay: calc(var(--i, 0) * 40ms);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+  * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
