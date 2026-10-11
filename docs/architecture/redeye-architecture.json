@@ -23,7 +23,8 @@
       "size": [
         140,
         70
-      ]
+      ],
+      "brand": "next-js"
     },
     {
       "id": "routes",
@@ -38,7 +39,8 @@
       "size": [
         140,
         70
-      ]
+      ],
+      "brand": "next-js"
     },
     {
       "id": "blob",
@@ -52,7 +54,8 @@
       "size": [
         140,
         70
-      ]
+      ],
+      "brand": "vercel"
     },
     {
       "id": "rwa",
@@ -66,7 +69,11 @@
       "size": [
         140,
         70
-      ]
+      ],
+      "brand": {
+        "url": "https://bin.bnbstatic.com/static/images/common/favicon.ico",
+        "sha256": "8318ebbcb1cb4729eb0f78bb058dc618c3b63f9f9f0070a1a7a3265fdc79b833"
+      }
     },
     {
       "id": "tick",
@@ -94,7 +101,8 @@
       "size": [
         140,
         70
-      ]
+      ],
+      "brand": "node-js"
     },
     {
       "id": "gate",
@@ -137,7 +145,11 @@
       "size": [
         140,
         70
-      ]
+      ],
+      "brand": {
+        "url": "https://bin.bnbstatic.com/static/images/common/favicon.ico",
+        "sha256": "8318ebbcb1cb4729eb0f78bb058dc618c3b63f9f9f0070a1a7a3265fdc79b833"
+      }
     },
     {
       "id": "txapi",
@@ -151,7 +163,11 @@
       "size": [
         140,
         70
-      ]
+      ],
+      "brand": {
+        "url": "https://bin.bnbstatic.com/static/images/common/favicon.ico",
+        "sha256": "8318ebbcb1cb4729eb0f78bb058dc618c3b63f9f9f0070a1a7a3265fdc79b833"
+      }
     },
     {
       "id": "baw",
@@ -165,7 +181,11 @@
       "size": [
         140,
         70
-      ]
+      ],
+      "brand": {
+        "url": "https://bin.bnbstatic.com/static/images/common/favicon.ico",
+        "sha256": "8318ebbcb1cb4729eb0f78bb058dc618c3b63f9f9f0070a1a7a3265fdc79b833"
+      }
     },
     {
       "id": "bsc",
@@ -179,7 +199,11 @@
       "size": [
         140,
         70
-      ]
+      ],
+      "brand": {
+        "url": "https://www.bnbchain.org/favicon.ico",
+        "sha256": "c76ff75dd4d2b58c7ffec302b26e65900bc84bae4b1197611743bdc186cf2b52"
+      }
     }
   ],
   "boundaries": [

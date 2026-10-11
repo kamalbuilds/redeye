@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "One earnings night, asleep in Mumbai",
+    "output": "redeye-earnings-night.html",
+    "quality_profile": "showcase",
+    "column_fit": "spread",
+    "viewBox": [
+      1080,
+      1040
+    ]
+  },
+  "participants": [
+    {
+      "id": "you",
+      "type": "external",
+      "label": "You",
+      "sublabel": "asleep, IST"
+    },
+    {
+      "id": "agent",
+      "type": "backend",
+      "label": "Redeye agent",
+      "sublabel": "redeye watch",
+      "brand": "node-js"
+    },
+    {
+      "id": "rwa",
+      "type": "external",
+      "label": "RWA data",
+      "sublabel": "public, no key",
+      "brand": {
+        "url": "https://bin.bnbstatic.com/static/images/common/favicon.ico",
+        "sha256": "8318ebbcb1cb4729eb0f78bb058dc618c3b63f9f9f0070a1a7a3265fdc79b833"
+      }
+    },
+    {
+      "id": "gate",
+      "type": "security",
+      "label": "Trade gate",
+      "sublabel": "guards, execute"
+    },
+    {
+      "id": "api",
+      "type": "external",
+      "label": "Web3 API",
+      "sublabel": "Trading, Transaction",
+      "brand": {
+        "url": "https://bin.bnbstatic.com/static/images/common/favicon.ico",
+        "sha256": "8318ebbcb1cb4729eb0f78bb058dc618c3b63f9f9f0070a1a7a3265fdc79b833"
+      }
+    },
+    {
+      "id": "baw",
+      "type": "security",
+      "label": "Agent wallet",
+      "sublabel": "Binance baw",
+      "brand": {
+        "url": "https://bin.bnbstatic.com/static/images/common/favicon.ico",
+        "sha256": "8318ebbcb1cb4729eb0f78bb058dc618c3b63f9f9f0070a1a7a3265fdc79b833"
+      }
+    },
+    {
+      "id": "bsc",
+      "type": "cloud",
+      "label": "BNB Chain",
+      "sublabel": "chainId 56",
+      "brand": {
+        "url": "https://www.bnbchain.org/favicon.ico",
+        "sha256": "c76ff75dd4d2b58c7ffec302b26e65900bc84bae4b1197611743bdc186cf2b52"
+      }
+    }
+  ],
+  "segments": [
+    {
+      "from": 160,
+      "to": 270,
+      "label": "Before bed"
+    },
+    {
+      "from": 280,
+      "to": 440,
+      "label": "After-hours move"
+    },
+    {
+      "from": 450,
+      "to": 770,
+      "label": "Guarded execution"
+    },
+    {
+      "from": 780,
+      "to": 960,
+      "label": "Settle and report"
+    }
+  ],
+  "messages": [
+    {
+      "id": "rule",
+      "from": "you",
+      "to": "agent",
+      "y": 200,
+      "label": "rule: down 8%, buy $5",
+      "variant": "emphasis"
+    },
+    {
+      "id": "armed",
+      "from": "agent",
+      "to": "you",
+      "y": 246,
+      "label": "armed for the window",
+      "variant": "return"
+    },
+    {
+      "id": "poll",
+      "from": "agent",
+      "to": "rwa",
+      "y": 320,
+      "label": "prices, status, 1h klines"
+    },
+    {
+      "id": "prices",
+      "from": "rwa",
+      "to": "agent",
+      "y": 366,
+      "label": "every version vs last close",
+      "variant": "return"
+    },
+    {
+      "id": "fired",
+      "from": "agent",
+      "to": "gate",
+      "y": 412,
+      "label": "evaluate fired: best version, $5",
+      "variant": "emphasis"
+    },
+    {
+      "id": "quote",
+      "from": "gate",
+      "to": "api",
+      "y": 490,
+      "label": "quote USDT to token"
+    },
+    {
+      "id": "route",
+      "from": "api",
+      "to": "gate",
+      "y": 536,
+      "label": "route + quoteId",
+      "variant": "return"
+    },
+    {
+      "id": "simulate",
+      "from": "gate",
+      "to": "api",
+      "y": 582,
+      "label": "simulate before signing"
+    },
+    {
+      "id": "passed",
+      "from": "api",
+      "to": "gate",
+      "y": 628,
+      "label": "simulation passed",
+      "variant": "return"
+    },
+    {
+      "id": "sign",
+      "from": "gate",
+      "to": "baw",
+      "y": 674,
+      "label": "sign and swap",
+      "variant": "security"
+    },
+    {
+      "id": "tx",
+      "from": "baw",
+      "to": "bsc",
+      "y": 746,
+      "label": "signed transaction",
+      "variant": "emphasis"
+    },
+    {
+      "id": "poll-order",
+      "from": "gate",
+      "to": "baw",
+      "y": 792,
+      "label": "poll the order",
+      "variant": "dashed"
+    },
+    {
+      "id": "finished",
+      "from": "baw",
+      "to": "gate",
+      "y": 838,
+      "label": "FINISHED + tx hash",
+      "variant": "return"
+    },
+    {
+      "id": "filled",
+      "from": "gate",
+      "to": "agent",
+      "y": 884,
+      "label": "filled, tx hash",
+      "variant": "return"
+    },
+    {
+      "id": "receipt",
+      "from": "agent",
+      "to": "you",
+      "y": 930,
+      "label": "morning receipt",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "agent",
+      "from": 194,
+      "to": 250,
+      "type": "backend"
+    },
+    {
+      "participant": "agent",
+      "from": 314,
+      "to": 934,
+      "type": "backend"
+    },
+    {
+      "participant": "gate",
+      "from": 406,
+      "to": 890,
+      "type": "security"
+    },
+    {
+      "participant": "baw",
+      "from": 668,
+      "to": 844,
+      "type": "security"
+    }
+  ]
+}
