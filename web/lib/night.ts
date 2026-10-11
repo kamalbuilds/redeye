@@ -115,6 +115,10 @@ export function weekdayDate(ms: number, z: Zone): string {
   return local(ms, z).toLocaleDateString("en-GB", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" });
 }
 
+export function weekday(ms: number, z: Zone): string {
+  return local(ms, z).toLocaleDateString("en-GB", { timeZone: "UTC", weekday: "short" });
+}
+
 export function duration(ms: number): string {
   const total = Math.round(ms / MIN);
   const h = Math.floor(total / 60);
