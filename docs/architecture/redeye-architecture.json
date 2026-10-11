@@ -1,0 +1,287 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Redeye: rules at the desk, trades on BNB Chain",
+    "output": "redeye-architecture.html",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1240,
+      660
+    ]
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Night desk",
+      "sublabel": "slip, ladder, receipts",
+      "pos": [
+        40,
+        230
+      ],
+      "size": [
+        140,
+        70
+      ]
+    },
+    {
+      "id": "routes",
+      "type": "backend",
+      "label": "Server routes",
+      "sublabel": "Next.js on Vercel",
+      "tag": "bom1",
+      "pos": [
+        295,
+        230
+      ],
+      "size": [
+        140,
+        70
+      ]
+    },
+    {
+      "id": "blob",
+      "type": "database",
+      "label": "Vercel Blob",
+      "sublabel": "per-visitor store",
+      "pos": [
+        295,
+        70
+      ],
+      "size": [
+        140,
+        70
+      ]
+    },
+    {
+      "id": "rwa",
+      "type": "external",
+      "label": "Public RWA data",
+      "sublabel": "no key needed",
+      "pos": [
+        550,
+        70
+      ],
+      "size": [
+        140,
+        70
+      ]
+    },
+    {
+      "id": "tick",
+      "type": "backend",
+      "label": "Tick core",
+      "sublabel": "evaluate, last close",
+      "pos": [
+        550,
+        230
+      ],
+      "size": [
+        140,
+        70
+      ]
+    },
+    {
+      "id": "cli",
+      "type": "backend",
+      "label": "Agent loop",
+      "sublabel": "redeye tick / watch",
+      "pos": [
+        550,
+        390
+      ],
+      "size": [
+        140,
+        70
+      ]
+    },
+    {
+      "id": "gate",
+      "type": "security",
+      "label": "Trade gate",
+      "sublabel": "cap, live switch",
+      "tag": "guards",
+      "pos": [
+        805,
+        230
+      ],
+      "size": [
+        140,
+        70
+      ]
+    },
+    {
+      "id": "exec",
+      "type": "backend",
+      "label": "Execution",
+      "sublabel": "quote, simulate, poll",
+      "pos": [
+        805,
+        370
+      ],
+      "size": [
+        140,
+        110
+      ]
+    },
+    {
+      "id": "trading",
+      "type": "external",
+      "label": "Trading API",
+      "sublabel": "quote, swap, RFQ",
+      "pos": [
+        1060,
+        230
+      ],
+      "size": [
+        140,
+        70
+      ]
+    },
+    {
+      "id": "txapi",
+      "type": "external",
+      "label": "Transaction API",
+      "sublabel": "simulate",
+      "pos": [
+        1060,
+        390
+      ],
+      "size": [
+        140,
+        70
+      ]
+    },
+    {
+      "id": "baw",
+      "type": "security",
+      "label": "Agentic Wallet",
+      "sublabel": "baw signs",
+      "pos": [
+        805,
+        550
+      ],
+      "size": [
+        140,
+        70
+      ]
+    },
+    {
+      "id": "bsc",
+      "type": "cloud",
+      "label": "BNB Chain",
+      "sublabel": "chainId 56",
+      "pos": [
+        1060,
+        550
+      ],
+      "size": [
+        140,
+        70
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Vercel bom1",
+      "wraps": [
+        "routes",
+        "blob"
+      ]
+    },
+    {
+      "kind": "security-group",
+      "label": "web3.binance.com/build",
+      "wraps": [
+        "trading",
+        "txapi"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "browser-routes",
+      "from": "browser",
+      "to": "routes",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "routes-blob",
+      "from": "routes",
+      "to": "blob",
+      "label": "rules, receipts"
+    },
+    {
+      "id": "routes-tick",
+      "from": "routes",
+      "to": "tick",
+      "label": "dry-run tick"
+    },
+    {
+      "id": "cli-tick",
+      "from": "cli",
+      "to": "tick",
+      "label": "tick / watch"
+    },
+    {
+      "id": "tick-rwa",
+      "from": "tick",
+      "to": "rwa",
+      "label": "prices, status, klines"
+    },
+    {
+      "id": "tick-gate",
+      "from": "tick",
+      "to": "gate",
+      "label": "fired",
+      "variant": "emphasis"
+    },
+    {
+      "id": "gate-exec",
+      "from": "gate",
+      "to": "exec",
+      "label": "within cap",
+      "variant": "security",
+      "labelDy": 58
+    },
+    {
+      "id": "exec-trading",
+      "from": "exec",
+      "to": "trading",
+      "label": "quote, swap"
+    },
+    {
+      "id": "exec-txapi",
+      "from": "exec",
+      "to": "txapi",
+      "label": "simulate",
+      "labelDy": 18
+    },
+    {
+      "id": "exec-baw",
+      "from": "exec",
+      "to": "baw",
+      "label": "sign",
+      "variant": "security",
+      "labelDy": 58
+    },
+    {
+      "id": "baw-bsc",
+      "from": "baw",
+      "to": "bsc",
+      "label": "signed tx",
+      "variant": "emphasis"
+    },
+    {
+      "id": "txapi-bsc",
+      "from": "txapi",
+      "to": "bsc",
+      "label": "simulates",
+      "variant": "dashed",
+      "labelDy": 58
+    }
+  ]
+}
