@@ -6,6 +6,10 @@ import type { NextConfig } from "next";
 const repoRoot = path.join(import.meta.dirname, "..");
 
 const nextConfig: NextConfig = {
+  // src/ is loaded at request time by path (lib/shared/src.ts), which file tracing cannot see.
+  // Trace from the repo root and ship src/ and the proof data with every route so the Vercel function has them.
+  outputFileTracingRoot: repoRoot,
+  outputFileTracingIncludes: { "/**": ["../src/**/*", "../package.json", "./content/**/*"] },
   turbopack: {
     root: repoRoot,
     rules: {
