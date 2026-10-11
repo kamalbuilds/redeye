@@ -28,7 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
         {children}
         <Colophon
-          statement="This page quotes and reads. It never holds a key that can sign."
+          statement="Every figure on this page names the call that read it."
           lines={[
             { term: "Prices", text: "Per-share prices and market status come from Binance Web3 public RWA endpoints, read when you press the button. Ondo prices computed from the stock quote are marked." },
             { term: "Tradable now", text: "A real quote request goes to the Binance Web3 Trading API for each version at your rule's size. A version that returns a route is tradable; one that returns an error says why." },

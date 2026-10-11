@@ -1,11 +1,11 @@
 import "server-only";
-import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { parseUnits } from "viem";
 import type { Rule, SessionStatus, StockVersion, VersionPrice, Decision } from "../../src/types.ts";
-import type { Receipt } from "../../src/agent/store.ts";
-import { evaluateMod, lastCloseMod, parseMod, rwa, web3api } from "./shared/src";
+import type { Receipt, StoredRule } from "../../src/agent/store.ts";
+import { evaluateMod, lastCloseMod, parseMod, rwa, web3api, type WebStore } from "./shared/src";
 import { loadRepoEnv, REPO_DATA_DIR } from "./shared/server-env";
+import { DAY, usSegments } from "./night";
 
 export const REDEYE_NAME = "Redeye";
 export const REDEYE_LINE = "Act while you sleep.";
@@ -86,6 +86,9 @@ async function windowFor(ticker: string, now: number): Promise<{ window: { start
     const t = Date.parse(hit.reportUtc);
     return { window: { startMs: t - HOUR, endMs: t + 12 * HOUR }, note: `Armed around the ${ticker} report at ${hit.reportUtc} (${hit.source}).` };
   }
+  // No report date on file: watch through the end of the next US after-hours session, the window the product is for.
+  const after = usSegments(now, now + 7 * DAY).find((s) => s.kind === "after" && s.end > now);
+  if (after) return { window: { startMs: now - 60_000, endMs: after.end }, note: `No report date for ${ticker} is on file, so this rule watches until US after-hours ends.` };
   return { window: { startMs: now - 60_000, endMs: now + 24 * HOUR }, note: `No report date for ${ticker} is on file, so this rule watches the next 24 hours.` };
 }
 
@@ -104,15 +107,47 @@ async function parseText(text: string, ctx: { now: number; window: { startMs: nu
   }
 }
 
-export async function inspectRule(text: string, wallet?: string): Promise<RuleView> {
-  const now = Date.now();
+/** Parse the sentence and attach its window. Shared by reading a rule and arming it, so both see the same rule. */
+async function prepareRule(text: string, now: number): Promise<{ first: string; rule: Rule; by: "pattern" | "claude"; win: { window: { startMs: number; endMs: number }; note: string } }> {
   const first = text.trim();
   if (!first) throw new RuleError("Write the rule first, for example: " + EXAMPLE_RULE);
   if (first.length > 300) throw new RuleError("Keep the rule under 300 characters.");
-
   const { rule, by } = await parseText(first, { now, window: { startMs: now - 60_000, endMs: now + 24 * HOUR } });
   const win = await windowFor(rule.ticker, now);
   rule.window = win.window;
+  return { first, rule, by, win };
+}
+
+export interface ArmedView {
+  ruleId: string;
+  ticker: string;
+  sentence: string;
+  window: { startMs: number; endMs: number };
+  note: string;
+  alreadyArmed: boolean;
+  at: number;
+}
+
+/** Persist the rule for the agent to watch. The text is parsed again here: the server never stores a rule the browser built. */
+export async function armRule(text: string, store: WebStore): Promise<ArmedView> {
+  const now = Date.now();
+  const { first, rule, win } = await prepareRule(text, now);
+  const { listVersions } = await rwa();
+  if ((await listVersions(rule.ticker)).length === 0) throw new RuleError(`${rule.ticker} has no tokenized version on BSC. Try TSLA, NVDA, AAPL or KO.`);
+  const norm = (t: string) => t.trim().replace(/\s+/g, " ").toLowerCase();
+  const twin = (await store.rules()).find((r) => r.status === "armed" && norm(r.text) === norm(first));
+  let sr: StoredRule;
+  try {
+    sr = twin ?? await store.addRule(rule, first, now);
+  } catch (e) {
+    throw new RuleError(e instanceof Error ? e.message : String(e));
+  }
+  return { ruleId: sr.rule.id, ticker: sr.rule.ticker, sentence: describeRule(sr.rule), window: sr.rule.window, note: win.note, alreadyArmed: twin !== undefined, at: now };
+}
+
+export async function inspectRule(text: string, wallet?: string): Promise<RuleView> {
+  const now = Date.now();
+  const { first, rule, by, win } = await prepareRule(text, now);
 
   const { listVersions, priceVersions, sessionStatus } = await rwa();
   const { evaluate } = await evaluateMod();
@@ -225,37 +260,41 @@ export interface ReceiptRow {
   orderId: string | null;
 }
 
-export interface Receipts { rows: ReceiptRow[]; file: string; exists: boolean; bad: number }
+export interface WatchRow { ruleId: string; text: string; sentence: string; startMs: number; endMs: number; since: number }
+
+export interface Desk { rows: ReceiptRow[]; total: number; watching: WatchRow[]; error: string | null }
 
 const asNum = (x: unknown): number | null => (typeof x === "number" && Number.isFinite(x) ? x : null);
 const asStr = (x: unknown): string | null => (typeof x === "string" && x ? x : null);
 
-/** Reads receipts.jsonl as written by src/agent/store.ts, newest first. A line that is not a receipt object is counted, never dropped silently. */
-export function readReceipts(limit = 20): Receipts {
-  const file = path.join(REPO_DATA_DIR, "receipts.jsonl");
-  const label = "receipts.jsonl";
-  if (!existsSync(file)) return { rows: [], file: label, exists: false, bad: 0 };
-  const rows: ReceiptRow[] = [];
-  let bad = 0;
-  for (const line of readFileSync(file, "utf8").split("\n").filter(Boolean)) {
-    let j: Partial<Receipt>;
-    try { j = JSON.parse(line); } catch { bad++; continue; }
-    if (typeof j !== "object" || j === null || Array.isArray(j)) { bad++; continue; }
-    const iso = typeof j.iso === "string" ? Date.parse(j.iso) : NaN;
-    rows.push({
-      at: asNum(j.at) ?? (Number.isFinite(iso) ? iso : null),
-      ruleId: asStr(j.ruleId),
-      ticker: asStr(j.ticker),
-      symbol: asStr(j.version?.symbol),
-      side: j.side === "buy" || j.side === "sell" ? j.side : null,
-      usd: asNum(j.usd),
-      mode: j.mode === "dry" || j.mode === "live" ? j.mode : null,
-      outcome: asStr(j.outcome) as Receipt["outcome"] | null,
-      reason: asStr(j.reason),
-      txHash: asStr(j.txHash),
-      orderId: asStr(j.orderId),
-    });
+function rowOf(j: Partial<Receipt>): ReceiptRow {
+  const iso = typeof j.iso === "string" ? Date.parse(j.iso) : NaN;
+  return {
+    at: asNum(j.at) ?? (Number.isFinite(iso) ? iso : null),
+    ruleId: asStr(j.ruleId),
+    ticker: asStr(j.ticker),
+    symbol: asStr(j.version?.symbol),
+    side: j.side === "buy" || j.side === "sell" ? j.side : null,
+    usd: asNum(j.usd),
+    mode: j.mode === "dry" || j.mode === "live" ? j.mode : null,
+    outcome: asStr(j.outcome) as Receipt["outcome"] | null,
+    reason: asStr(j.reason),
+    txHash: asStr(j.txHash),
+    orderId: asStr(j.orderId),
+  };
+}
+
+/** Receipts newest first, plus the rules still armed, from whichever store this deployment uses. A store that cannot be read is reported, never shown as empty. */
+export async function readDesk(store: WebStore | null, limit = 20): Promise<Desk> {
+  if (!store) return { rows: [], total: 0, watching: [], error: null };
+  try {
+    const [receipts, rules] = await Promise.all([store.receipts(), store.rules()]);
+    const rows = receipts.filter((j) => typeof j === "object" && j !== null).map(rowOf).sort((a, b) => (b.at ?? 0) - (a.at ?? 0));
+    const watching = rules.filter((r) => r.status === "armed").map((r): WatchRow => ({
+      ruleId: r.rule.id, text: r.text, sentence: describeRule(r.rule), startMs: r.rule.window.startMs, endMs: r.rule.window.endMs, since: r.createdAt,
+    })).sort((a, b) => b.since - a.since);
+    return { rows: rows.slice(0, limit), total: rows.length, watching, error: null };
+  } catch (e) {
+    return { rows: [], total: 0, watching: [], error: e instanceof Error ? e.message : String(e) };
   }
-  rows.sort((a, b) => (b.at ?? 0) - (a.at ?? 0));
-  return { rows: rows.slice(0, limit), file: label, exists: true, bad };
 }

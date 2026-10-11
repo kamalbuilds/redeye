@@ -1,5 +1,6 @@
-import { readReceipts, type ReceiptRow } from "@/lib/redeye";
-import { istAndSgt, usd } from "@/lib/shared/format";
+import { readDesk, type ReceiptRow, type WatchRow } from "@/lib/redeye";
+import { storeFor, visitorFromCookie } from "@/lib/store";
+import { istAndSgt, usd, watchWindow } from "@/lib/shared/format";
 
 const OUTCOME: Record<string, string> = {
   no_fire: "Held. Trigger not met",
@@ -18,6 +19,25 @@ function Row({ k, children }: { k: string; children: React.ReactNode }) {
       <dt className="text-[0.6875rem] uppercase tracking-[0.14em] text-ink-2">{k}</dt>
       <dd className="break-words">{children}</dd>
     </div>
+  );
+}
+
+function Watching({ w, now, i, total }: { w: WatchRow; now: number; i: number; total: number }) {
+  return (
+    <li
+      className="slip-wrap relative -mt-3 first:mt-0"
+      style={{ zIndex: total - i, transform: `rotate(${TILT[i % TILT.length]}deg) translateX(${(i % 2 ? 1 : -1) * 3}px)` }}
+    >
+      <article className="slip slip-top slip-bottom px-5 pb-7 pt-7">
+        <p className="text-[0.75rem] font-bold uppercase tracking-[0.12em]">On watch</p>
+        <dl className="mt-2.5 space-y-1.5 border-t border-dashed border-ink/50 pt-2.5 text-[0.8125rem] leading-snug">
+          <Row k="Rule">{w.sentence}</Row>
+          <Row k="Watching">{watchWindow(w.startMs, w.endMs, now)}</Row>
+          <Row k="Left">{istAndSgt(w.since)}</Row>
+          <Row k="Id">{w.ruleId}</Row>
+        </dl>
+      </article>
+    </li>
   );
 }
 
@@ -51,9 +71,11 @@ function Slip({ x, i, total }: { x: ReceiptRow; i: number; total: number }) {
   );
 }
 
-export function ReceiptStack() {
-  const r = readReceipts(20);
-  const shown = r.rows.slice(0, SHOWN);
+export async function ReceiptStack() {
+  const desk = await readDesk(await storeFor(await visitorFromCookie()), 20);
+  const shown = desk.rows.slice(0, SHOWN);
+  const now = Date.now();
+  const stack = desk.watching.length + shown.length;
   return (
     <section aria-labelledby="receipts" className="grid gap-x-16 gap-y-10 md:grid-cols-[22.5rem_minmax(0,1fr)]">
       <div>
@@ -61,11 +83,11 @@ export function ReceiptStack() {
         <p className="mt-3 max-w-[34ch] text-[0.9375rem] leading-snug text-fg-2">
           What Redeye did while you slept, newest on top. Every receipt carries the rule id, the version it chose and one sentence on why.
         </p>
-        {r.bad > 0 && <p className="fig mt-4 text-[0.75rem] text-fg-3">{r.bad} line(s) in {r.file} were not receipts and are not shown.</p>}
+        {desk.error && <p role="alert" className="fig mt-4 text-[0.75rem] text-fail">Receipts could not be read: {desk.error}</p>}
       </div>
 
       <div className="w-full max-w-[22.5rem] py-2">
-        {shown.length === 0 ? (
+        {stack === 0 ? (
           <div className="slip-wrap">
             <article className="slip slip-top slip-bottom px-5 pb-7 pt-7">
               <p className="text-[0.75rem] font-bold uppercase tracking-[0.12em]">No receipt yet</p>
@@ -82,10 +104,11 @@ export function ReceiptStack() {
           </div>
         ) : (
           <ol aria-label="Receipts, newest first">
-            {shown.map((x, i) => <Slip key={`${x.ruleId}-${x.at}-${i}`} x={x} i={i} total={shown.length} />)}
+            {desk.watching.map((w, i) => <Watching key={w.ruleId} w={w} now={now} i={i} total={stack} />)}
+            {shown.map((x, i) => <Slip key={`${x.ruleId}-${x.at}-${i}`} x={x} i={i + desk.watching.length} total={stack} />)}
           </ol>
         )}
-        {r.rows.length > SHOWN && <p className="fig mt-4 text-[0.75rem] text-fg-3">{r.rows.length - SHOWN} older receipts stay in {r.file}.</p>}
+        {desk.total > SHOWN && <p className="fig mt-4 text-[0.75rem] text-fg-3">{desk.total - SHOWN} older receipts are kept.</p>}
       </div>
     </section>
   );

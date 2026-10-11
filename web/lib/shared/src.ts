@@ -2,6 +2,7 @@ import "server-only";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Decision, Rule, SessionStatus, VersionPrice } from "../../../src/types.ts";
+import type { Receipt, StoredRule } from "../../../src/agent/store.ts";
 
 // ../src is written for Node 24 native .ts execution and locates its own data files with
 // import.meta.url. Bundling it breaks that (the bundler tries to resolve ../../data/*.json at
@@ -26,3 +27,23 @@ export const evaluateMod = () => load("signals/evaluate.ts") as Promise<{
 export const lastCloseMod = () => load("agent/lastclose.ts") as Promise<typeof import("../../../src/agent/lastclose.ts")>;
 
 export const web3api = () => load("exec/web3api.ts") as Promise<typeof import("../../../src/exec/web3api.ts")>;
+
+export const fileStoreMod = () => load("agent/store.ts") as Promise<typeof import("../../../src/agent/store.ts")>;
+export const blobStoreMod = () => load("agent/blobstore.ts") as Promise<typeof import("../../../src/agent/blobstore.ts")>;
+// tick.ts imports src/signals, which does not pass strict tsc (see above), so its surface is declared here.
+type Maybe<T> = T | Promise<T>;
+export interface WebStore {
+  rules(): Maybe<StoredRule[]>;
+  receipts(): Maybe<Receipt[]>;
+  appendReceipt(r: Receipt): Maybe<void>;
+  setStatus(ruleId: string, status: StoredRule["status"], note?: string, now?: number): Maybe<void>;
+  addRule(rule: Rule, text: string, now?: number): Maybe<StoredRule>;
+}
+export const tickMod = () => load("agent/tick.ts") as Promise<{
+  tick(
+    now: number,
+    opts: { live: boolean; maxUsdPerTrade: number },
+    deps: { store: WebStore; trade: typeof import("../../../src/agent/dryrun.ts").dryTrade; holdingUsd: () => Promise<number> },
+  ): Promise<Receipt[]>;
+}>;
+export const dryRunMod = () => load("agent/dryrun.ts") as Promise<typeof import("../../../src/agent/dryrun.ts")>;

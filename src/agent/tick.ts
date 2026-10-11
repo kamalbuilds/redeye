@@ -9,11 +9,21 @@ import type { TradeDeps, TradeOpts } from "./guards.ts";
 import { lastClose as defaultLastClose } from "./lastclose.ts";
 import type { LastClose } from "./lastclose.ts";
 import { openStore } from "./store.ts";
-import type { Receipt, Store, StoredRule } from "./store.ts";
+import type { Receipt, RuleStatus, StoredRule } from "./store.ts";
 
 export type TickOpts = TradeOpts;
+type Maybe<T> = T | Promise<T>;
+// What tick needs from a store. The file store answers synchronously, the blob store the web uses answers with promises.
+export interface TickStore {
+  rules(): Maybe<StoredRule[]>;
+  receipts(): Maybe<Receipt[]>;
+  appendReceipt(r: Receipt): Maybe<void>;
+  setStatus(ruleId: string, status: RuleStatus, note?: string, now?: number): Maybe<void>;
+}
 export interface TickDeps extends TradeDeps {
-  store?: Store;
+  store?: TickStore;
+  // Replaces guardedTrade. The web passes a trade that quotes and simulates without a wallet; the CLI keeps the default.
+  trade?: typeof guardedTrade;
   listVersions?: (ticker: string) => Promise<StockVersion[]>;
   priceVersions?: (v: StockVersion[]) => Promise<VersionPrice[]>;
   sessionStatus?: (v: StockVersion) => Promise<SessionStatus>;
@@ -35,29 +45,29 @@ export async function tick(now: number, opts: TickOpts, deps: TickDeps = {}): Pr
   const mode = isLive(opts, env) ? "live" : "dry";
   const out: Receipt[] = [];
 
-  for (const sr of store.rules().filter((r) => r.status === "armed")) {
+  for (const sr of (await store.rules()).filter((r) => r.status === "armed")) {
     const rule = sr.rule;
     const base: Receipt = {
       at: now, iso: new Date(now).toISOString(), kind: "rule", ruleId: rule.id, ticker: rule.ticker, mode,
       outcome: "no_fire", reason: "", lastClose: null, lastCloseSource: null, observed: [], version: null,
       side: rule.action.side, usd: null, quote: null, simulate: "not run", txHash: null, orderId: null, execLog: [],
     };
-    const emit = (r: Receipt): void => {
+    const emit = async (r: Receipt): Promise<void> => {
       // Every decision gets a receipt, except that a rule still waiting for its window would repeat one sentence all day.
-      if (now < rule.window.startMs && store.receipts().filter((x) => x.ruleId === rule.id).at(-1)?.reason === r.reason) return;
-      store.appendReceipt(r);
+      if (now < rule.window.startMs && (await store.receipts()).filter((x) => x.ruleId === rule.id).at(-1)?.reason === r.reason) return;
+      await store.appendReceipt(r);
       out.push(r);
     };
     try {
-      emit(await decideAndAct(sr, base, now, opts, deps, store));
+      await emit(await decideAndAct(sr, base, now, opts, deps, store));
     } catch (e) {
-      emit({ ...base, outcome: "failed", reason: `Could not check ${rule.ticker}: ${e instanceof Error ? e.message : String(e)}` });
+      await emit({ ...base, outcome: "failed", reason: `Could not check ${rule.ticker}: ${e instanceof Error ? e.message : String(e)}` });
     }
   }
   return out;
 }
 
-async function decideAndAct(sr: StoredRule, base: Receipt, now: number, opts: TickOpts, deps: TickDeps, store: Store): Promise<Receipt> {
+async function decideAndAct(sr: StoredRule, base: Receipt, now: number, opts: TickOpts, deps: TickDeps, store: TickStore): Promise<Receipt> {
   const rule = sr.rule;
   const listV = deps.listVersions ?? defaultList;
   const priceV = deps.priceVersions ?? defaultPrice;
@@ -67,7 +77,7 @@ async function decideAndAct(sr: StoredRule, base: Receipt, now: number, opts: Ti
   // Outside the window evaluate() answers from the clock alone, so no network is touched.
   if (now < rule.window.startMs || now > rule.window.endMs) {
     const d = evaluate(rule, 1, [], new Map(), now);
-    if (now > rule.window.endMs) store.setStatus(rule.id, "expired", d.reason, now);
+    if (now > rule.window.endMs) await store.setStatus(rule.id, "expired", d.reason, now);
     return { ...base, reason: d.reason };
   }
 
@@ -107,16 +117,16 @@ async function decideAndAct(sr: StoredRule, base: Receipt, now: number, opts: Ti
   }
   const version = decision.version as StockVersion;
 
-  const t = await guardedTrade(decision, rule, usd, opts, deps);
+  const t = await (deps.trade ?? guardedTrade)(decision, rule, usd, opts, deps);
   const r: Receipt = {
     ...base, ...seen, outcome: t.outcome, version: vref(version), usd: t.usd, quote: t.quote, simulate: t.simulate,
     txHash: t.fill?.txHash ?? null, orderId: t.fill?.orderId ?? null, execLog: t.execLog,
     reason: `${decision.reason} ${t.reason}`,
   };
-  if (t.outcome === "filled") store.setStatus(rule.id, "filled", r.reason, now);
+  if (t.outcome === "filled") await store.setStatus(rule.id, "filled", r.reason, now);
   // A live order that was submitted but did not confirm may still fill later: never fire the rule again unattended.
   else if (t.live && t.outcome === "failed" && (r.orderId || r.txHash || t.execLog.some((l) => /submitted/.test(l)))) {
-    store.setStatus(rule.id, "review", "an order was submitted but did not confirm; check the wallet before re-arming", now);
+    await store.setStatus(rule.id, "review", "an order was submitted but did not confirm; check the wallet before re-arming", now);
   }
   return r;
 }

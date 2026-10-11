@@ -16,3 +16,11 @@ export const istTime = (ms: number) => stamp(ms, "Asia/Kolkata", true);
 
 /** "5:35 am IST (8:05 am SGT)": the date once, then both clocks. */
 export const istAndSgt = (ms: number) => `${istTime(ms)} IST (${stamp(ms, "Asia/Singapore", false)} SGT)`;
+
+const sgtTime = (ms: number) => stamp(ms, "Asia/Singapore", false);
+
+/** "now to Tue, 13 Oct, 5:30 am IST (8:00 am SGT)": a rule's watch window in the reader's two clocks. */
+export function watchWindow(startMs: number, endMs: number, now: number): string {
+  const from = startMs <= now + 60_000 ? "now" : istTime(startMs);
+  return `${from} to ${istTime(endMs)} IST (${sgtTime(endMs)} SGT)`;
+}

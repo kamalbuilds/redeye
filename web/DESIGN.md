@@ -4,7 +4,7 @@ Hallmark catalog theme: **Lumen, Night Foundry drop**, accent retuned from molte
 
 Audience: people in India and Singapore who hold US stocks and sleep through the US session. Use: leave a rule before bed, read how it was parsed, see which tokenized version can trade, read the morning receipt. Tone: technical and calm, the page you open at 11 pm.
 
-Name: Redeye, defined once as `REDEYE_NAME` in `lib/redeye.ts`. Routes: `/` (night strip, order slip, price ladder, receipts), `/proof` (night replay of TSLA, 22 to 23 July 2026), `POST /api/rule`, `GET /api/status`. Session math lives in `lib/night.ts` with its test in `lib/night.test.ts`.
+Name: Redeye, defined once as `REDEYE_NAME` in `lib/redeye.ts`. Routes: `/` (night strip, order slip, price ladder, receipts), `/proof` (night replay of TSLA, 22 to 23 July 2026), `POST /api/rule` (read a rule), `POST /api/arm` (persist it for the agent), `GET /api/tick` (cron, bearer-protected dry run of every armed rule), `GET /api/status`. Session math lives in `lib/night.ts` with its test in `lib/night.test.ts`.
 
 ## Tokens (OKLCH, declared in app/globals.css)
 
