@@ -1,6 +1,6 @@
 # DESIGN.md
 
-Hallmark catalog theme: **Lumen, Night Foundry drop**, accent retuned from molten brass to a sodium street lamp. Genre: atmospheric. Macrostructure: bespoke apparatus page, a 24 hour night strip as the instrument, then an order slip beside a price ladder, then a stack of receipts. Nav archetype: N9 edge-aligned (wordmark left, two mono links right, one hairline). Footer archetype: Ft5 statement.
+Hallmark catalog theme: **Lumen, Night Foundry drop**, accent retuned from molten brass to a sodium street lamp. Genre: atmospheric. Macrostructure: bespoke apparatus page. The headline and the order slip sit side by side so the slip starts above the fold, the price ladder stands under the headline beside the slip, the 24 hour night strip is the instrument below them, then a stack of receipts. Nav archetype: N9 edge-aligned (wordmark left, two mono links right, one hairline). Footer archetype: Ft5 statement.
 
 Audience: people in India and Singapore who hold US stocks and sleep through the US session. Use: leave a rule before bed, read how it was parsed, see which tokenized version can trade, read the morning receipt. Tone: technical and calm, the page you open at 11 pm.
 

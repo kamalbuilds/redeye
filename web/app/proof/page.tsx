@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Page } from "@/components/shared/page";
+import { Colophon } from "@/components/shared/colophon";
 import { Replay } from "@/components/night/replay";
 import { HOUR, ZONES, clock } from "@/lib/night";
 import { loadProof, PROOF_FILES } from "@/lib/redeye-proof";
@@ -110,10 +111,18 @@ export default async function Proof() {
             </table>
           </div>
           <p className="mt-4 max-w-[62ch] text-[0.8125rem] text-fg-3">
-            Tokens: Binance public kline endpoint, chain 56, 1h candles, each reading the close of its candle, rows in {PROOF_FILES.tsv}. Real price: Yahoo Finance extended-hours hourly bars as recorded in {PROOF_FILES.md}. The rule runs through the agent&apos;s parser, last-close reader and evaluate() with both tokens read as trading, since the recording holds prices and no market status.
+            Rows are in {PROOF_FILES.tsv} and {PROOF_FILES.md}. The replay runs with both tokens open to trade, so the rule&apos;s choice rests on price alone.
           </p>
         </details>
       </Page>
+      <Colophon
+        statement="The rule that fires here is the one the agent runs."
+        lines={[
+          { term: "Tokens", text: "TSLAon and TSLAB hourly candles from the Binance public kline endpoint, chain 56. Each reading is a candle's close, placed at the end of its hour." },
+          { term: "Real price", text: "Yahoo Finance extended-hours hourly bars for TSLA, recorded beside the candles. Rings on the chart are these closes." },
+          { term: "The rule", text: "The agent's parser reads the sentence, its last-close reader takes the 4 pm New York close, and evaluate() answers at every reading in order. The first answer that fires prints the receipt." },
+        ]}
+      />
     </>
   );
 }

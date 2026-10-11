@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { OrderSlip, type ArmState, type SlipState } from "./order-slip";
 import { PriceLadder } from "./price-ladder";
 import type { ArmedView, RuleView } from "@/lib/redeye";
 
-export function Desk() {
+/** The headline sits above the ladder on a wide screen and above the slip on a phone, so the slip starts under the first thing you read. */
+export function Desk({ headline }: { headline: ReactNode }) {
   const [state, setState] = useState<SlipState>({ kind: "idle" });
   const [arm, setArm] = useState<ArmState>({ kind: "idle" });
   const ladder = useRef<HTMLDivElement>(null);
@@ -37,17 +38,18 @@ export function Desk() {
   }
 
   return (
-    <div className="grid gap-x-16 gap-y-14 md:grid-cols-[22.5rem_minmax(0,1fr)]">
-      <div>
+    <div className="grid gap-x-16 gap-y-8 md:grid-cols-[22.5rem_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:gap-y-10">
+      <div className="min-w-0 md:col-start-2 md:row-start-1">{headline}</div>
+      <div className="md:col-start-1 md:row-span-2 md:row-start-1">
         <p className="max-w-[18ch] font-serif text-[2rem] leading-[1.08] md:text-[2.5rem]">Leave a rule before bed.</p>
         <p className="mt-3 max-w-[34ch] text-[0.9375rem] leading-snug text-fg-2">
           Redeye watches every tokenized version of the stock on BNB Chain through the US session and acts on the best one that can trade.
         </p>
-        <div className="mt-8">
+        <div className="mt-5 md:mt-8">
           <OrderSlip state={state} onRead={read} arm={arm} onArm={armRule} />
         </div>
       </div>
-      <div ref={ladder} tabIndex={-1} className="min-w-0 outline-none md:pt-2">
+      <div ref={ladder} tabIndex={-1} className="min-w-0 outline-none md:col-start-2 md:row-start-2">
         <PriceLadder state={state} />
       </div>
     </div>
