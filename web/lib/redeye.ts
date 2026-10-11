@@ -4,7 +4,7 @@ import path from "node:path";
 import { parseUnits } from "viem";
 import type { Rule, SessionStatus, StockVersion, VersionPrice, Decision } from "../../src/types.ts";
 import type { Receipt } from "../../src/agent/store.ts";
-import { evaluateMod, parseMod, rwa, web3api } from "./shared/src";
+import { evaluateMod, lastCloseMod, parseMod, rwa, web3api } from "./shared/src";
 import { loadRepoEnv, REPO_DATA_DIR } from "./shared/server-env";
 
 export const REDEYE_NAME = "Redeye";
@@ -87,12 +87,6 @@ async function parseText(text: string, ctx: { now: number; window: { startMs: nu
   }
 }
 
-function lastDailyClose(rows: { t: number; c: number }[], now: number): { price: number; day: string } | null {
-  const startOfToday = Math.floor(now / 86_400_000) * 86_400_000;
-  const done = rows.filter((r) => r.t < startOfToday).sort((a, b) => b.t - a.t)[0];
-  return done ? { price: done.c, day: new Date(done.t).toISOString().slice(0, 10) } : null;
-}
-
 export async function inspectRule(text: string, wallet?: string): Promise<RuleView> {
   const now = Date.now();
   const first = text.trim();
@@ -103,7 +97,7 @@ export async function inspectRule(text: string, wallet?: string): Promise<RuleVi
   const win = await windowFor(rule.ticker, now);
   rule.window = win.window;
 
-  const { listVersions, priceVersions, sessionStatus, candles } = await rwa();
+  const { listVersions, priceVersions, sessionStatus } = await rwa();
   const { evaluate } = await evaluateMod();
   const versions = await listVersions(rule.ticker);
   if (versions.length === 0) throw new RuleError(`${rule.ticker} has no tokenized version on BSC. Try TSLA, NVDA, AAPL or KO.`);
@@ -111,15 +105,13 @@ export async function inspectRule(text: string, wallet?: string): Promise<RuleVi
   const [prices, statuses] = await Promise.all([priceVersions(versions), Promise.all(versions.map((v) => sessionStatus(v)))]);
   const statusBySymbol = new Map<string, SessionStatus>(versions.map((v, i) => [v.symbol, statuses[i]]));
 
-  // last close: latest finished UTC daily candle of the first version that has candles (bStocks, xStocks, Ondo)
+  // last close: the US regular-session close (16:00 New York), read from the Ondo or bStocks 1h candle that ends then.
+  // A 24/7 pool's UTC daily candle would put Saturday's trading in the baseline.
   let lastClose: RuleView["lastClose"] = null;
-  for (const v of [...versions].sort((a, b) => rank(a) - rank(b))) {
-    try {
-      const rows = await candles(v, "1d", { limit: 5 });
-      const lc = lastDailyClose(rows, now);
-      if (lc) { lastClose = { ...lc, symbol: v.symbol }; break; }
-    } catch { /* try the next version; a missing daily candle is shown as unknown below */ }
-  }
+  try {
+    const lc = await (await lastCloseMod()).lastClose(versions, now);
+    lastClose = { price: lc.close, day: new Date(lc.closeAt).toISOString().slice(0, 10), symbol: lc.source.split(" ")[0] };
+  } catch { /* shown as unknown below */ }
 
   const probes = await probeAll(versions, rule, wallet);
   const rows: VersionRow[] = versions.map((v, i) => rowFor(v, prices[i], statuses[i], probes[i], rule));

@@ -23,4 +23,6 @@ export const evaluateMod = () => load("signals/evaluate.ts") as Promise<{
   evaluate(rule: Rule, lastClose: number, observed: VersionPrice[], status: Map<string, SessionStatus>, now: number): Decision;
 }>;
 
+export const lastCloseMod = () => load("agent/lastclose.ts") as Promise<typeof import("../../../src/agent/lastclose.ts")>;
+
 export const web3api = () => load("exec/web3api.ts") as Promise<typeof import("../../../src/exec/web3api.ts")>;
