@@ -47,6 +47,23 @@ export interface RuleView {
   at: number;
 }
 
+export interface MarketStatusView {
+  state: SessionStatus["marketStatus"];
+  open: boolean;
+  reasonCode: string | null;
+  reasonMsg: string | null;
+  nextOpenTime: number | null;
+  nextCloseTime: number | null;
+  at: number;
+}
+
+/** Binance's market-status endpoint for US equities, read live. The night strip prints it next to the session clock. */
+export async function readMarketStatus(): Promise<MarketStatusView> {
+  const { sessionStatus } = await rwa();
+  const s = await sessionStatus();
+  return { state: s.marketStatus, open: s.openState, reasonCode: s.reasonCode, reasonMsg: s.reasonMsg, nextOpenTime: s.nextOpenTime, nextCloseTime: s.nextCloseTime, at: Date.now() };
+}
+
 export class RuleError extends Error {
   constructor(message: string) {
     super(message);
