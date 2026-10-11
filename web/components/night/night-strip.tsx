@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { ChevronLeft } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Note } from "@/components/shared/page";
@@ -53,21 +53,27 @@ function statusText(s: MarketStatusView, z: Zone): string {
   return parts.join(" ");
 }
 
+// the chosen zone lives in localStorage; the strip re-reads it through a tiny store so the server render stays on IST
+const zoneListeners = new Set<() => void>();
+const readZone = (): ZoneId => {
+  const saved = localStorage.getItem("redeye.zone");
+  if (saved === "IST" || saved === "SGT") return saved;
+  return Intl.DateTimeFormat().resolvedOptions().timeZone === "Asia/Singapore" ? "SGT" : "IST";
+};
+const subscribeZone = (cb: () => void) => { zoneListeners.add(cb); return () => { zoneListeners.delete(cb); }; };
+const storeZone = (id: ZoneId) => { localStorage.setItem("redeye.zone", id); zoneListeners.forEach((l) => l()); };
+
 export function NightStrip({ initialNow }: { initialNow: number }) {
-  const [zoneId, setZoneId] = useState<ZoneId>("IST");
+  const zoneId = useSyncExternalStore(subscribeZone, readZone, () => "IST" as ZoneId);
   const [now, setNow] = useState(initialNow);
   const status = useStatus();
   const z = ZONES[zoneId];
 
   useEffect(() => {
-    const saved = localStorage.getItem("redeye.zone");
-    if (saved === "IST" || saved === "SGT") setZoneId(saved);
-    else if (Intl.DateTimeFormat().resolvedOptions().timeZone === "Asia/Singapore") setZoneId("SGT");
-  }, []);
-  useEffect(() => {
-    setNow(Date.now());
-    const id = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(id);
+    const tick = () => setNow(Date.now());
+    const first = setTimeout(tick, 0);
+    const id = setInterval(tick, 30_000);
+    return () => { clearTimeout(first); clearInterval(id); };
   }, []);
 
   const w = useMemo(() => nightWindow(now, z), [now, z]);
@@ -100,8 +106,7 @@ export function NightStrip({ initialNow }: { initialNow: number }) {
             onValueChange={(v) => {
               const next = v[0] as ZoneId | undefined;
               if (!next) return;
-              setZoneId(next);
-              localStorage.setItem("redeye.zone", next);
+              storeZone(next);
             }}
             spacing={0}
             className="rounded-sm border border-line-2"

@@ -1,6 +1,6 @@
 /* Hallmark · genre: atmospheric · macrostructure: Night strip + order slip + price ladder (bespoke apparatus page)
  * theme: Lumen, Night Foundry drop, accent retuned to sodium-lamp amber · nav: N9 edge-aligned · footer: Ft5 statement
- * display: Instrument Serif (roman only) · body: Geist · slips and labels: Azeret Mono
+ * display: Libre Caslon Text (roman only) · body: Geist · slips and labels: Azeret Mono
  */
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -98,7 +98,7 @@
   --color-paper-rule: var(--paper-rule);
 
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-instrument-serif), "Iowan Old Style", Georgia, serif;
+  --font-serif: var(--font-display), "Iowan Old Style", Georgia, serif;
   --font-mono: var(--font-azeret-mono), ui-monospace, "SF Mono", Menlo, monospace;
   --font-heading: var(--font-serif);
 

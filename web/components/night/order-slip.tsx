@@ -34,13 +34,14 @@ const BLANK = ["STOCK", "IF", "THEN", "SLIPPAGE", "WATCH", "READ BY"];
 
 export function OrderSlip({ state, onRead }: { state: SlipState; onRead: (text: string) => void }) {
   const [text, setText] = useState("");
-  const [torn, setTorn] = useState(false);
+  const [tornAt, setTornAt] = useState<number | null>(null);
   const done = state.kind === "done" ? state.view : null;
+  const torn = done !== null && tornAt === done.at;
 
   // the lines print first, then the stub comes away
   useEffect(() => {
-    if (!done) { setTorn(false); return; }
-    const id = setTimeout(() => setTorn(true), 760);
+    if (!done) return;
+    const id = setTimeout(() => setTornAt(done.at), 760);
     return () => clearTimeout(id);
   }, [done]);
 

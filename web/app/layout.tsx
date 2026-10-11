@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Azeret_Mono, Geist, Instrument_Serif } from "next/font/google";
+import { Azeret_Mono, Geist, Libre_Caslon_Text } from "next/font/google";
 import { Masthead } from "@/components/shared/masthead";
 import { Colophon } from "@/components/shared/colophon";
 import { REDEYE_NAME } from "@/lib/redeye";
 import "./globals.css";
 
 const sans = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
-const serif = Instrument_Serif({ subsets: ["latin"], weight: "400", style: "normal", variable: "--font-instrument-serif", display: "swap" });
+const serif = Libre_Caslon_Text({ subsets: ["latin"], weight: ["400"], style: "normal", variable: "--font-display", display: "swap" });
 const mono = Azeret_Mono({ subsets: ["latin"], variable: "--font-azeret-mono", display: "swap" });
 
 export const metadata: Metadata = {
