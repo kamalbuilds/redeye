@@ -46,7 +46,7 @@ export function Replay({ proof }: { proof: Proof }) {
   const t1 = hours[hours.length - 1];
   const moveA = Date.UTC(2026, 6, 22, 20);
   const moveB = Date.UTC(2026, 6, 22, 21);
-  const [t, setT] = useState(moveA - 2 * HOUR);
+  const [t, setT] = useState(moveA - 30 * 60_000);
   const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
@@ -163,7 +163,7 @@ export function Replay({ proof }: { proof: Proof }) {
             role="img"
             aria-label={`TSLA on 22 to 23 July 2026 in Mumbai time. TSLAon and TSLAB against the real after-hours price. Use the slider below to move through the night.`}
             className="block touch-pan-y"
-            onPointerDown={(e) => { (e.currentTarget as SVGSVGElement).setPointerCapture(e.pointerId); setPlaying(false); setFromPointer(e.clientX); }}
+            onPointerDown={(e) => { try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* synthetic pointer: no capture */ } setPlaying(false); setFromPointer(e.clientX); }}
             onPointerMove={(e) => { if (e.buttons) setFromPointer(e.clientX); }}
           >
             <rect x={m.l} y={m.t} width={w - m.l - m.r} height={hPlot} fill="var(--night-2)" />
