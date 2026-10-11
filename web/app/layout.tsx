@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Courier_Prime, Geist, Instrument_Serif } from "next/font/google";
+import { Azeret_Mono, Geist, Instrument_Serif } from "next/font/google";
 import { Masthead } from "@/components/shared/masthead";
 import { Colophon } from "@/components/shared/colophon";
 import { REDEYE_NAME } from "@/lib/redeye";
@@ -7,7 +7,7 @@ import "./globals.css";
 
 const sans = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
 const serif = Instrument_Serif({ subsets: ["latin"], weight: "400", style: "normal", variable: "--font-instrument-serif", display: "swap" });
-const mono = Courier_Prime({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-courier-prime", display: "swap" });
+const mono = Azeret_Mono({ subsets: ["latin"], variable: "--font-azeret-mono", display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: `${REDEYE_NAME}: rules that act on the US session while you sleep`, template: `%s | ${REDEYE_NAME}` },

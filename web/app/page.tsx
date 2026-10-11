@@ -1,21 +1,20 @@
 import { Page } from "@/components/shared/page";
-import { RuleDesk } from "@/components/redeye/rule-desk";
-import { Receipts } from "@/components/redeye/receipts";
-import { REDEYE_LINE } from "@/lib/redeye";
+import { NightStrip } from "@/components/night/night-strip";
+import { Desk } from "@/components/night/desk";
+import { ReceiptStack } from "@/components/night/receipt-stack";
 
 export const dynamic = "force-dynamic";
 
 export default function Home() {
   return (
-    <Page>
-      <h1 className="max-w-[12ch] text-[2.5rem] font-light leading-[1.05] tracking-[-0.015em] md:max-w-[18ch] md:text-[3.5rem]">{REDEYE_LINE}</h1>
-      <p className="mt-5 max-w-[56ch] text-[1.0625rem] text-ink-2">
-        US companies report at 4 pm in New York, which is 1:30 am in Mumbai. Write the rule before bed. Redeye shows how it read you and which tokenized version of the stock can actually trade.
-      </p>
-      <div className="mt-10">
-        <RuleDesk />
-      </div>
-      <Receipts />
-    </Page>
+    <>
+      <NightStrip initialNow={Date.now()} />
+      <Page className="pt-16">
+        <Desk />
+        <div className="mt-28">
+          <ReceiptStack />
+        </div>
+      </Page>
+    </>
   );
 }
