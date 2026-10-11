@@ -9,7 +9,7 @@ The desk for Redeye, an earnings-night agent for people in India, Singapore and 
 - **Price ladder**: every Ondo, bStocks and xStocks token of the ticker at its live per-share price, against the last close and the trigger, each marked tradable or not with the reason, from a real quote request at the size of your rule.
 - **Morning receipts**: the receipts of every check on the rules you armed, as a stack of slips with the rules still on watch on top, then newest first, with the outcome, the reason, the token chosen and a BscScan link when a transaction exists.
 - **`/api/tick`**: the cron entry. With `Authorization: Bearer $CRON_SECRET` it runs, for every armed rule, the agent's own tick (evaluate, last close, per-version quote, Transaction API simulate) as a dry run and appends a receipt. Without the bearer it answers 401. The web never signs.
-- **Replay (`/proof`)**: Tesla's 22 July 2026 earnings night on a scrubbable Mumbai clock, TSLAon and TSLAB against the real after-hours price, with the full data table.
+- **Replay (`/proof`)**: Tesla's 22 July 2026 earnings night on a scrubbable Mumbai clock, TSLAon and TSLAB against the real after-hours price, with the full data table. The agent's own parser, last-close reader and `evaluate()` run over the recorded readings with the rule "if TSLA drops 4% buy $6"; the trigger line is drawn on the chart and the receipt it prints sits at the hour it fired, in Mumbai time.
 
 ## Run it
 

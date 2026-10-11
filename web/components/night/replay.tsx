@@ -44,9 +44,9 @@ export function Replay({ proof }: { proof: Proof }) {
   const hours = useMemo(() => [...new Set([...proof.ondo, ...proof.bstocks].map((p) => p.t))].sort((a, b) => a - b), [proof]);
   const t0 = hours[0];
   const t1 = hours[hours.length - 1];
-  const moveA = Date.UTC(2026, 6, 22, 20);
-  const moveB = Date.UTC(2026, 6, 22, 21);
-  const [t, setT] = useState(moveA - 30 * 60_000);
+  const moveA = proof.move.fromAt;
+  const moveB = proof.move.toAt;
+  const [t, setT] = useState(proof.fire.t);
   const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
@@ -75,7 +75,7 @@ export function Replay({ proof }: { proof: Proof }) {
 
   const narrow = w < 560;
   const m = { l: narrow ? 44 : 56, r: narrow ? 58 : 84, t: 30 };
-  const hPlot = narrow ? 280 : 340;
+  const hPlot = narrow ? 280 : 420;
   const axisH = 40;
   const totalH = m.t + hPlot + axisH;
   const x = (ms: number) => m.l + ((ms - t0) / (t1 - t0)) * (w - m.l - m.r);
@@ -116,8 +116,8 @@ export function Replay({ proof }: { proof: Proof }) {
   const realFresh = real && t - real.t < HOUR ? real : null;
   const phase = phaseAt(t);
   const inSleep = sleeps.some(([a, b]) => t >= a && t <= b);
-  const moveOn = proof.ondo.find((p) => p.t === moveA);
-  const moveOff = proof.ondo.find((p) => p.t === moveB);
+  const trig = proof.rule.triggerPrice;
+  const fireX = x(proof.fire.t);
 
   const setFromPointer = (clientX: number) => {
     const r = box.current!.getBoundingClientRect();
@@ -138,7 +138,7 @@ export function Replay({ proof }: { proof: Proof }) {
           <span className="text-[1.75rem] text-sodium">{ap}</span>
         </p>
         <p className="fig mt-2 text-[0.8125rem] text-fg-2">IST, {weekdayDate(t, IST)}</p>
-        <p className="fig text-[0.75rem] text-fg-3">{clock(t, SGT, { minutes: true })} SGT, {new Date(t).toISOString().slice(11, 16)} UTC</p>
+        <p className="fig text-[0.75rem] text-fg-3">{clock(t, SGT, { minutes: true })} SGT</p>
         <p className="mt-4 max-w-[26ch] text-[0.9375rem] leading-snug text-fg-2">
           {phase ? `US ${KIND_LABEL[phase].toLowerCase()}.` : "The US market is closed."} {inSleep ? "You are asleep." : "You are awake."}
         </p>
@@ -156,7 +156,7 @@ export function Replay({ proof }: { proof: Proof }) {
       </div>
 
       <div className="min-w-0">
-        <div ref={box} className="w-full select-none">
+        <div ref={box} className="relative w-full select-none">
           <svg
             width={w}
             height={totalH}
@@ -195,6 +195,10 @@ export function Replay({ proof }: { proof: Proof }) {
             <line x1={x(moveA)} x2={x(moveA)} y1={m.t} y2={m.t + hPlot} stroke="var(--sodium)" strokeWidth="1" />
             <line x1={x(moveB)} x2={x(moveB)} y1={m.t} y2={m.t + hPlot} stroke="var(--sodium)" strokeWidth="1" />
 
+            {/* the rule: the close it measures from and the line it triggers on */}
+            <line x1={m.l} x2={w - m.r} y1={y(proof.rule.lastClose)} y2={y(proof.rule.lastClose)} stroke="var(--fg-2)" strokeWidth="1" />
+            <line x1={m.l} x2={w - m.r} y1={y(trig)} y2={y(trig)} stroke="var(--sodium)" strokeWidth="1.5" strokeDasharray="7 5" />
+
             {segments(proof.bstocks).map((d, i) => <path key={`b${i}`} d={d} fill="none" stroke="var(--series-bstocks)" strokeWidth="2" strokeLinejoin="round" />)}
             {segments(proof.ondo).map((d, i) => <path key={`o${i}`} d={d} fill="none" stroke="var(--series-ondo)" strokeWidth="2" strokeLinejoin="round" />)}
             {realLinks.map(({ a, b }) => <line key={a.t} x1={x(a.t)} y1={y(a.v)} x2={x(b.t)} y2={y(b.v)} stroke="var(--series-real)" strokeWidth="1.5" strokeDasharray="2 3" />)}
@@ -213,17 +217,25 @@ export function Replay({ proof }: { proof: Proof }) {
               );
             })()}
 
-            {/* the move: annotation sits on the chart */}
-            {moveOn && moveOff && (
-              <g>
-                <text x={x(moveB) + 8} y={m.t + 18} fontSize="11" fill="var(--sodium)" className="fig">
-                  {clock(moveA, IST, { minutes: true })} to {clock(moveB, IST, { minutes: true })} IST
-                </text>
-                <text x={x(moveB) + 8} y={m.t + 33} fontSize="11" fill="var(--fg-2)" className="fig">
-                  {narrow ? "the move" : `TSLAon ${moveOn.v.toFixed(2)} to ${moveOff.v.toFixed(2)}, ${(((moveOff.v - moveOn.v) / moveOn.v) * 100).toFixed(1)}%`}
-                </text>
-              </g>
-            )}
+            {/* the move: annotation sits on the chart, the same figure the headline and the receipt quote */}
+            <g>
+              <text x={x(moveB) + 8} y={m.t + 18} fontSize="11" fill="var(--sodium)" className="fig">
+                {clock(moveA, IST, { minutes: true })} to {clock(moveB, IST, { minutes: true })} IST
+              </text>
+              <text x={x(moveB) + 8} y={m.t + 33} fontSize="11" fill="var(--fg-2)" className="fig">
+                {narrow ? `-${proof.move.pct.toFixed(1)}%` : `${proof.move.from.toFixed(2)} to ${proof.move.to.toFixed(2)}, -${proof.move.pct.toFixed(1)}%`}
+              </text>
+            </g>
+            <text x={w - m.r - 6} y={y(proof.rule.lastClose) - 6} textAnchor="end" fontSize="11" fill="var(--fg-2)" className="fig">
+              {narrow ? `close ${proof.rule.lastClose.toFixed(2)}` : `4 pm New York close ${proof.rule.lastClose.toFixed(2)}`}
+            </text>
+            <text x={w - m.r - 6} y={y(trig) + 16} textAnchor="end" fontSize="12" fill="var(--sodium)" className="fig">
+              {narrow ? `trigger ${trig.toFixed(2)}` : `trigger ${trig.toFixed(2)}, ${proof.rule.pct}% under the close`}
+            </text>
+
+            {/* the reading the rule fired on */}
+            <line x1={fireX} x2={fireX} y1={m.t - 12} y2={m.t + hPlot} stroke="var(--sodium)" strokeWidth="2" />
+            <circle cx={fireX} cy={y(proof.fire.price)} r="6.5" fill="var(--sodium)" stroke="var(--night)" strokeWidth="2" />
 
             {xTicks.map((tk) => {
               const h = new Date(tk + IST.offsetMin * 60_000).getUTCHours();
@@ -245,7 +257,17 @@ export function Replay({ proof }: { proof: Proof }) {
               {bs && <circle cx={x(bs.t)} cy={y(bs.v)} r="5" fill="var(--series-bstocks)" stroke="var(--night)" strokeWidth="2" />}
             </g>
           </svg>
+          {!narrow && (
+            <div className="slip-wrap pointer-events-none absolute w-[17rem]" style={{ left: Math.min(fireX + 16, w - m.r - 280), bottom: axisH + 10 }}>
+              <FireSlip proof={proof} />
+            </div>
+          )}
         </div>
+        {narrow && (
+          <div className="slip-wrap mt-4 w-full max-w-[20rem]">
+            <FireSlip proof={proof} />
+          </div>
+        )}
 
         <div className="mt-5 flex items-center gap-4">
           <button
@@ -290,5 +312,23 @@ function Reading({ name, color, value, at, ring, none = "no candle yet" }: { nam
         )}
       </dd>
     </div>
+  );
+}
+
+function FireSlip({ proof }: { proof: Proof }) {
+  const f = proof.fire;
+  return (
+    <article className="slip slip-top slip-bottom px-4 pb-5 pt-5">
+      <p className="text-[0.6875rem] font-bold uppercase tracking-[0.16em]">Receipt, replayed</p>
+      <p className="mt-1.5 flex items-baseline gap-2">
+        <span className="num text-[1.5rem] leading-none">{clock(f.t, IST, { minutes: true })} IST</span>
+        <span className="text-[0.6875rem] text-ink-2">{clock(f.t, SGT, { minutes: true })} SGT</span>
+      </p>
+      <p className="mt-2 text-[0.8125rem] font-bold leading-snug">Bought {f.symbol} at ${f.price.toFixed(2)}. You were asleep.</p>
+      <dl className="mt-2 space-y-1 border-t border-dashed border-ink/50 pt-2 text-[0.75rem] leading-snug">
+        <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2"><dt className="text-[0.6875rem] uppercase tracking-[0.12em] text-ink-2">Rule</dt><dd>{proof.rule.text}</dd></div>
+        <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2"><dt className="text-[0.6875rem] uppercase tracking-[0.12em] text-ink-2">Why</dt><dd>{f.reason}</dd></div>
+      </dl>
+    </article>
   );
 }
