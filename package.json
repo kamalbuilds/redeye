@@ -1,0 +1,7 @@
+{
+  "name": "redeye-bnb",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": { "test": "node --env-file-if-exists=.env --test 'src/**/*.test.ts'" }
+}
