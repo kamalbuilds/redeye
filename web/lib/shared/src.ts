@@ -47,3 +47,5 @@ export const tickMod = () => load("agent/tick.ts") as Promise<{
   ): Promise<Receipt[]>;
 }>;
 export const dryRunMod = () => load("agent/dryrun.ts") as Promise<typeof import("../../../src/agent/dryrun.ts")>;
+
+export const executeMod = () => load("exec/execute.ts") as Promise<typeof import("../../../src/exec/execute.ts")>;

@@ -57,6 +57,7 @@ const shortReason = (v: VersionRow): string => {
     case "ONDO_CLOSED": case "BSTOCK_CLOSED": return `Not tradable: ${v.issuerLabel} is closed`;
     case "NO_LIQUIDITY": return "Not tradable: no quote at this size";
     case "NO_KEY": return "Not checked: no Binance key on the server";
+    case "NO_PRICE": return "Not tradable: no price to size the sale";
     case "NO_ROUTE": return "Not tradable: no route";
     default: return "Not tradable: no quote";
   }
@@ -74,7 +75,7 @@ export function PriceLadder({ state }: { state: SlipState }) {
       </Frame>
     );
   }
-  return <Frame sub={`Quotes requested ${istAndSgt(state.view.at)}, sized at ${usd(state.view.versions[0]?.probe.amountUsd ?? 0, 0)}, your rule's size.`}><Ladder view={state.view} /></Frame>;
+  return <Frame sub={`Quotes requested ${istAndSgt(state.view.at)}. ${state.view.sizing.text}`}><Ladder view={state.view} /></Frame>;
 }
 
 function Frame({ children, sub }: { children: React.ReactNode; sub?: string }) {

@@ -71,10 +71,9 @@ function Slip({ x, i, total }: { x: ReceiptRow; i: number; total: number }) {
   );
 }
 
-export async function ReceiptStack() {
+export async function ReceiptStack({ now }: { now: number }) {
   const desk = await readDesk(await storeFor(await visitorFromCookie()), 20);
   const shown = desk.rows.slice(0, SHOWN);
-  const now = Date.now();
   const stack = desk.watching.length + shown.length;
   return (
     <section aria-labelledby="receipts" className="grid gap-x-16 gap-y-10 md:grid-cols-[22.5rem_minmax(0,1fr)]">

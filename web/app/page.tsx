@@ -17,7 +17,7 @@ export default async function Home() {
       <Page className="pt-16">
         <Desk />
         <div className="mt-28">
-          <ReceiptStack />
+          <ReceiptStack now={now} />
         </div>
       </Page>
     </>

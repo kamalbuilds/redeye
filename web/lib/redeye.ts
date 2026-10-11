@@ -1,9 +1,10 @@
 import "server-only";
 import path from "node:path";
-import { parseUnits } from "viem";
 import type { Rule, SessionStatus, StockVersion, VersionPrice, Decision } from "../../src/types.ts";
 import type { Receipt, StoredRule } from "../../src/agent/store.ts";
-import { evaluateMod, lastCloseMod, parseMod, rwa, web3api, type WebStore } from "./shared/src";
+import { evaluateMod, executeMod, lastCloseMod, parseMod, rwa, web3api, type WebStore } from "./shared/src";
+import { REFERENCE_HOLDING_USD } from "./reference";
+import { quoteLeg } from "./quote-leg";
 import { loadRepoEnv, REPO_DATA_DIR } from "./shared/server-env";
 import { DAY, usSegments } from "./night";
 
@@ -11,7 +12,6 @@ export const REDEYE_NAME = "Redeye";
 export const REDEYE_LINE = "Act while you sleep.";
 export const EXAMPLE_RULE = "if TSLA drops 8% buy $6";
 
-const USDT = "0x55d398326f99059fF775485246999027B3197955";
 const BURN_PROBE = "0x000000000000000000000000000000000000dEaD";
 const HOUR = 3_600_000;
 
@@ -29,7 +29,7 @@ export interface VersionRow {
   stockUsd: number | null;
   derived: boolean;
   session: { state: string | null; open: boolean; reasonCode: string | null; reasonMsg: string | null; nextOpenTime: number | null };
-  probe: { amountUsd: number; ok: boolean; vendor: string | null; mode: string | null; kind: string | null; message: string | null };
+  probe: { side: "buy" | "sell"; amountUsd: number; ok: boolean; vendor: string | null; mode: string | null; kind: string | null; message: string | null };
   tradable: boolean;
   because: string;
 }
@@ -42,9 +42,22 @@ export interface RuleView {
   windowNote: string;
   lastClose: { price: number; symbol: string; day: string } | null;
   trigger: { price: number | null };
+  sizing: Sizing;
   standing: string;
   versions: VersionRow[];
   at: number;
+}
+
+/** How the quotes behind the ladder are sized: the direction and the dollars, in the rule's own terms. */
+export interface Sizing {
+  side: "buy" | "sell";
+  usd: number;
+  /** The rule sells a fraction of a holding the web cannot see, so the quotes use a reference sale. */
+  reference: boolean;
+  /** What the rule says it trades: "$6" or "50% of your holding". */
+  rule: string;
+  /** One sentence for the ladder: which way the quotes run and at what size. */
+  text: string;
 }
 
 export interface MarketStatusView {
@@ -69,6 +82,25 @@ export class RuleError extends Error {
     super(message);
     this.name = "RuleError";
   }
+}
+
+const holdingWords = (f: number | undefined) => (f === 1 ? "all of your holding" : `${Math.round((f ?? 0) * 100)}% of your holding`);
+
+export function sizingFor(rule: Rule): Sizing {
+  const a = rule.action;
+  if (a.side === "buy") {
+    if (a.usd === undefined) throw new RuleError("A buy needs a dollar amount, for example: buy $6.");
+    return { side: "buy", usd: a.usd, reference: false, rule: `$${a.usd}`, text: `Buying: each quote runs USDT into the token for $${a.usd}, your rule's size.` };
+  }
+  if (a.usd !== undefined) {
+    return { side: "sell", usd: a.usd, reference: false, rule: `$${a.usd} of the token`, text: `Selling: each quote runs the token into USDT for $${a.usd} worth of the token, your rule's size.` };
+  }
+  const usdRef = (a.fractionOfHolding ?? 0) * REFERENCE_HOLDING_USD;
+  const w = holdingWords(a.fractionOfHolding);
+  return {
+    side: "sell", usd: usdRef, reference: true, rule: w,
+    text: `Selling ${w}: each quote runs the token into USDT, sized as a $${usdRef} reference sale. The agent sizes the real sale from the wallet's balance.`,
+  };
 }
 
 function describeRule(r: Rule): string {
@@ -165,8 +197,9 @@ export async function inspectRule(text: string, wallet?: string): Promise<RuleVi
     lastClose = { price: lc.close, day: new Date(lc.closeAt).toISOString().slice(0, 10), symbol: lc.source.split(" ")[0] };
   } catch { /* shown as unknown below */ }
 
-  const probes = await probeAll(versions, rule, wallet);
-  const rows: VersionRow[] = versions.map((v, i) => rowFor(v, prices[i], statuses[i], probes[i], rule));
+  const sizing = sizingFor(rule);
+  const probes = await probeAll(versions, prices, sizing, wallet);
+  const rows: VersionRow[] = versions.map((v, i) => rowFor(v, prices[i], statuses[i], probes[i]));
 
   let standing = "The last close is unavailable, so the current standing of the rule cannot be computed.";
   let triggerPrice: number | null = null;
@@ -176,64 +209,66 @@ export async function inspectRule(text: string, wallet?: string): Promise<RuleVi
     triggerPrice = lastClose.price * (1 + (rule.trigger.direction === "down" ? -1 : 1) * rule.trigger.pct / 100);
   }
 
-  return { text: first, parsedBy: by, rule, sentence: describeRule(rule), windowNote: win.note, lastClose, trigger: { price: triggerPrice }, standing, versions: rows, at: now };
+  return { text: first, parsedBy: by, rule, sentence: describeRule(rule), windowNote: win.note, lastClose, trigger: { price: triggerPrice }, sizing, standing, versions: rows, at: now };
 }
-
-const rank = (v: StockVersion) => (v.issuer === "bstocks" ? 0 : v.issuer === "xstocks" ? 1 : 2);
 
 type Probe = VersionRow["probe"];
 
-async function probeAll(versions: StockVersion[], rule: Rule, wallet?: string): Promise<Probe[]> {
-  const amountUsd = rule.action.usd ?? 6;
+async function probeAll(versions: StockVersion[], prices: VersionPrice[], sizing: Sizing, wallet?: string): Promise<Probe[]> {
+  const { side, usd: amountUsd } = sizing;
   loadRepoEnv();
   const { createWeb3Client, credsFromEnv, MissingKeyError, Web3ApiError, BSC } = await web3api();
+  const { pickRoute } = await executeMod();
   let api;
   try {
     api = createWeb3Client(credsFromEnv());
   } catch (e) {
     const message = e instanceof MissingKeyError ? "Binance Web3 API key is not configured on the server" : String(e);
-    return versions.map(() => ({ amountUsd, ok: false, vendor: null, mode: null, kind: "NO_KEY", message }));
+    return versions.map(() => ({ side, amountUsd, ok: false, vendor: null, mode: null, kind: "NO_KEY", message }));
   }
   const user = wallet && /^0x[0-9a-fA-F]{40}$/.test(wallet) ? wallet : BURN_PROBE;
-  return Promise.all(versions.map(async (v): Promise<Probe> => {
+  return Promise.all(versions.map(async (v, i): Promise<Probe> => {
+    const miss = (kind: string, message: string): Probe => ({ side, amountUsd, ok: false, vendor: null, mode: null, kind, message });
     try {
-      const amount = parseUnits(String(amountUsd), 18).toString(); // BSC USDT has 18 decimals
-      const routes = await api.quote({ amount, fromToken: USDT, toToken: v.address, userWalletAddress: user, chainId: BSC });
-      const best = routes[0];
-      if (!best) return { amountUsd, ok: false, vendor: null, mode: null, kind: "NO_ROUTE", message: "No route returned" };
-      return { amountUsd, ok: true, vendor: best.vendorName, mode: best.executionMode, kind: null, message: null };
+      const leg = quoteLeg(side, amountUsd, v, prices[i]?.tokenUsd ?? null);
+      if (!leg) return miss("NO_PRICE", "No token price to size the sale");
+      const routes = await api.quote({ ...leg, userWalletAddress: user, chainId: BSC });
+      if (routes.length === 0) return miss("NO_ROUTE", "No route returned");
+      const best = pickRoute(routes, v.route === "RFQ" ? "RFQ" : "SWAP"); // the route the agent's own trade takes
+      return { side, amountUsd, ok: true, vendor: best.vendorName, mode: best.executionMode, kind: null, message: null };
     } catch (e) {
-      if (e instanceof Web3ApiError) return { amountUsd, ok: false, vendor: null, mode: null, kind: e.kind, message: e.apiMsg };
-      return { amountUsd, ok: false, vendor: null, mode: null, kind: "ERROR", message: e instanceof Error ? e.message : String(e) };
+      if (e instanceof Web3ApiError) return miss(e.kind, e.apiMsg);
+      return miss("ERROR", e instanceof Error ? e.message : String(e));
     }
   }));
 }
 
 const BLOCKED = new Set(["ASSET_LIMITED", "MARKET_PAUSED", "ASSET_PAUSED"]);
 
-function rowFor(v: StockVersion, p: VersionPrice, s: SessionStatus, probe: Probe, rule: Rule): VersionRow {
+function rowFor(v: StockVersion, p: VersionPrice, s: SessionStatus, probe: Probe): VersionRow {
   const issuerLabel = ISSUER_LABEL[v.issuer];
   let because: string;
   let tradable = probe.ok;
+  const order = probe.side === "buy" ? "buy" : "sale";
   if (s.reasonCode && BLOCKED.has(s.reasonCode)) {
     tradable = false;
     because = `Paused by Binance${s.reasonMsg ? ` (${s.reasonMsg})` : ""}.`;
   } else if (probe.ok) {
-    because = `A $${probe.amountUsd} order quotes through ${probe.vendor ?? "a route"} (${probe.mode}).`;
+    because = `A $${probe.amountUsd} ${order} quotes through ${probe.vendor ?? "a route"} (${probe.mode}).`;
   } else if (probe.kind === "MIN_ORDER") {
-    because = `${issuerLabel} rejects an order this small: it needs more than $5. Your rule buys $${probe.amountUsd}.`;
+    because = `${issuerLabel} rejects an order this small: it needs more than $5. This ${order} is $${probe.amountUsd}.`;
   } else if (probe.kind === "ONDO_CLOSED" || probe.kind === "BSTOCK_CLOSED") {
     because = `${issuerLabel} is closed. ${probe.message ?? ""}`.trim();
   } else if (probe.kind === "NO_LIQUIDITY") {
     because = v.issuer === "ondo"
       ? `Ondo quotes nothing at $${probe.amountUsd} right now. On weekends and outside US hours its market makers do not answer.`
-      : `No pool route has depth for $${probe.amountUsd} of ${v.symbol} right now.`;
+      : `No pool route has depth for a $${probe.amountUsd} ${order} of ${v.symbol} right now.`;
   } else if (probe.kind === "NO_KEY") {
     because = "Cannot check: the Binance key is not set on this server.";
   } else {
     because = `No quote: ${probe.message ?? probe.kind ?? "unknown error"}.`;
   }
-  if (v.issuer === "ondo" && rule.action.side === "buy" && (rule.action.usd ?? 6) <= 5 && !probe.ok && probe.kind !== "MIN_ORDER") {
+  if (v.issuer === "ondo" && probe.amountUsd <= 5 && !probe.ok && probe.kind !== "MIN_ORDER") {
     because += " Ondo also refuses orders of $5 or less.";
   }
   return {
