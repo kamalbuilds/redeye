@@ -211,7 +211,7 @@ function Ladder({ view }: { view: RuleView }) {
         ))}
 
         {sorted.map((v, i) => (
-          <div key={v.address} className="absolute bg-night pr-1" style={{ left: labelX, right: 0, top: labelY[i] - 12 }}>
+          <div key={v.address} className="absolute bg-night pr-2" style={{ left: labelX, maxWidth: `calc(100% - ${labelX}px)`, top: labelY[i] - 12 }}>
             <p className="fig text-[0.75rem] leading-tight">
               <span className="font-bold text-fg">{v.symbol}</span> <span className="text-fg-3">{v.issuerLabel}</span>
             </p>
