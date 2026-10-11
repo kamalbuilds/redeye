@@ -176,7 +176,9 @@ export async function armRule(text: string, store: WebStore): Promise<ArmedView>
   try {
     sr = twin ?? await store.addRule(rule, first, now);
   } catch (e) {
-    throw new RuleError(e instanceof Error ? e.message : String(e));
+    // a refusal the visitor can act on is shown; a disk or network failure is logged by the route and shown generically
+    if (e instanceof Error && /rules are already armed|already exists/.test(e.message)) throw new RuleError(e.message);
+    throw e;
   }
   return { ruleId: sr.rule.id, ticker: sr.rule.ticker, sentence: describeRule(sr.rule), window: sr.rule.window, note: win.note, alreadyArmed: twin !== undefined, at: now };
 }
@@ -335,6 +337,7 @@ export async function readDesk(store: WebStore | null, limit = 20): Promise<Desk
     })).sort((a, b) => b.since - a.since);
     return { rows: rows.slice(0, limit), total: rows.length, watching, error: null };
   } catch (e) {
-    return { rows: [], total: 0, watching: [], error: e instanceof Error ? e.message : String(e) };
+    console.error("receipts", e);
+    return { rows: [], total: 0, watching: [], error: "the store did not answer" };
   }
 }
