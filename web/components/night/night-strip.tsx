@@ -272,7 +272,7 @@ export function Tonight({ initialNow }: { initialNow: number }) {
               <li key={s.kind} className="flex items-baseline gap-3">
                 <span aria-hidden className={cn("size-3 shrink-0 translate-y-0.5", SEG_FILL[s.kind])} />
                 <span className="label w-[7.5rem] shrink-0">{KIND_LABEL[s.kind]}</span>
-                <span className={cn("num text-[1.25rem] leading-tight", s.kind === "after" ? "text-sodium" : "text-fg")}>
+                <span className={cn("num whitespace-nowrap text-[1.125rem] leading-tight", s.kind === "after" ? "text-sodium" : "text-fg")}>
                   {span(s.start, s.end, z)} <span className="fig text-[0.75rem] text-fg-3">{z.id}</span>
                 </span>
               </li>

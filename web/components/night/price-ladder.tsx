@@ -286,7 +286,7 @@ function Rows({ view, basis }: { view: RuleView; basis: number | null }) {
                 <p className={cn("flex gap-1.5", v.tradable ? "text-sodium" : "text-fg-2")}>
                   <span aria-hidden className="fig">{v.tradable ? "+" : "x"}</span>{shortReason(v)}
                 </p>
-                {close !== null && <p className="fig shrink-0 text-[0.75rem] text-fg-3">{(((v.perShareUsd as number) / close - 1) * 100).toFixed(2)}%</p>}
+                {close !== null && <p className="fig shrink-0 text-[0.75rem] text-fg-3">{(((v.perShareUsd as number) / close - 1) * 100).toFixed(2)}% vs close</p>}
               </div>
               {pick && view.pick && <p className="mt-2 text-[0.8125rem] leading-snug text-fg"><span className="font-bold text-sodium">{view.pick.line}.</span> {view.pick.reason}</p>}
               <a href={`https://bscscan.com/token/${v.address}`} target="_blank" rel="noreferrer" className="fig mt-1.5 inline-flex min-h-8 items-center text-[0.6875rem] text-fg-3 underline decoration-line-2 underline-offset-2 hover:text-sodium">
