@@ -229,7 +229,7 @@ export function Replay({ proof }: { proof: Proof }) {
             <text x={w - m.r - 6} y={y(proof.rule.lastClose) - 6} textAnchor="end" fontSize="11" fill="var(--fg-2)" className="fig">
               {narrow ? `close ${proof.rule.lastClose.toFixed(2)}` : `4 pm New York close ${proof.rule.lastClose.toFixed(2)}`}
             </text>
-            <text x={w - m.r - 6} y={y(trig) + 16} textAnchor="end" fontSize="12" fill="var(--sodium)" className="fig">
+            <text x={w - m.r - 6} y={y(trig) + 16} textAnchor="end" fontSize="12" fill="var(--sodium)" stroke="var(--night-2)" strokeWidth="4" paintOrder="stroke" className="fig">
               {narrow ? `trigger ${trig.toFixed(2)}` : `trigger ${trig.toFixed(2)}, ${proof.rule.pct}% under the close`}
             </text>
 

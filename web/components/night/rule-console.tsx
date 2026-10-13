@@ -81,7 +81,7 @@ export function RuleConsole({ state, onRead, arm, onArm }: {
             spellCheck={false}
             autoComplete="off"
             placeholder={DEFAULT_RULE}
-            className="min-w-0 flex-1 bg-transparent font-mono text-[1.0625rem] text-fg caret-sodium outline-none placeholder:text-fg-3 focus-visible:outline-none"
+            className="min-w-0 flex-1 bg-transparent font-mono text-[0.9375rem] md:text-[1.0625rem] text-fg caret-sodium outline-none placeholder:text-fg-3 focus-visible:outline-none"
           />
           <button
             type="submit"

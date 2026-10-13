@@ -124,7 +124,7 @@ export async function ReceiptStack({ now }: { now: number }) {
 
       <div className="mt-8 overflow-hidden rounded-lg border border-line-2 bg-night-2">
         <div aria-hidden className="label hidden grid-cols-[7.5rem_9rem_minmax(0,1fr)_6rem] gap-x-6 border-b border-line px-5 py-2.5 md:grid">
-          <span>Outcome</span><span>Version</span><span>Why</span><span className="text-right">BscScan</span>
+          <span>Outcome</span><span>Version</span><span>Why</span><span className="text-right">Tx</span>
         </div>
         <ol aria-label="Receipts, newest first">
           {desk.watching.map((w) => <Watching key={w.ruleId} w={w} now={now} />)}

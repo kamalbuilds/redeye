@@ -73,8 +73,8 @@ function Frame({ children, sub }: { children: React.ReactNode; sub?: string }) {
   return (
     <section aria-labelledby="ladder-h" className="min-w-0 rounded-lg border border-line-2 bg-night-2">
       <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-2.5">
-        <h2 id="ladder-h" className="label text-fg-2">Price ladder, per share</h2>
-        <p className="label flex items-center gap-2"><span aria-hidden className="size-1.5 rounded-full bg-sodium" />BNB Chain, live</p>
+        <h2 id="ladder-h" className="label whitespace-nowrap text-fg-2">Price ladder<span className="max-md:hidden">, per share</span></h2>
+        <p className="label flex items-center gap-2 whitespace-nowrap"><span aria-hidden className="live-dot size-1.5 rounded-full bg-sodium" />BNB Chain, live</p>
       </div>
       <div className="px-5 pb-6 pt-4">
         {sub && <p className="fig text-[0.75rem] leading-snug text-fg-3">{sub}</p>}
@@ -114,6 +114,7 @@ function Ladder({ view }: { view: RuleView }) {
 
   const values = [...priced.map((v) => v.perShareUsd as number), ...(close !== null ? [close] : []), ...(trig !== null ? [trig] : [])];
   if (values.length === 0) return <Note tone="warn">No version of {rule.ticker} has a price right now, so there is nothing to stand on the ladder.</Note>;
+  if (!wide) return <Rows view={view} basis={basis} />;
   const lo0 = Math.min(...values);
   const hi0 = Math.max(...values);
   const pad = Math.max((hi0 - lo0) * 0.06, hi0 * 0.004);
@@ -239,16 +240,6 @@ function Ladder({ view }: { view: RuleView }) {
         ))}
       </div>
 
-      {!wide && (
-        <ol className="mt-6 space-y-3 border-t border-line pt-4 text-[0.8125rem] leading-snug text-fg-2">
-          {view.versions.map((v) => (
-            <li key={v.address}>
-              <span className="fig font-bold text-fg">{v.symbol}</span> {v.because}{v.derived ? " Price computed from the stock quote." : ""}
-              {view.pick?.symbol === v.symbol && <span className="mt-1 block border-l-2 border-sodium pl-2.5 text-fg">{view.pick.reason}</span>}
-            </li>
-          ))}
-        </ol>
-      )}
       {!view.pick && view.pickNote && <p className="mt-4 text-[0.8125rem] text-fg-2">{view.pickNote}</p>}
       {unpriced.length > 0 && (
         <p className="mt-4 text-[0.8125rem] text-fg-2">
@@ -256,6 +247,56 @@ function Ladder({ view }: { view: RuleView }) {
         </p>
       )}
       {close === null && <div className="mt-4"><Note tone="warn">The last close is unavailable, so the close and trigger lines cannot be drawn.</Note></div>}
+    </div>
+  );
+}
+
+/** A phone has no room for a scaled ladder: the close and the trigger, then each version as a row, dearest first. */
+function Rows({ view, basis }: { view: RuleView; basis: number | null }) {
+  const close = view.lastClose?.price ?? null;
+  const trig = view.trigger.price;
+  const down = view.rule.trigger.direction === "down";
+  const away = basis !== null && trig !== null ? (down ? (basis - trig) / basis : (trig - basis) / basis) * 100 : null;
+  const sorted = view.versions.filter((v) => v.perShareUsd !== null).sort((a, b) => (b.perShareUsd as number) - (a.perShareUsd as number));
+  return (
+    <div>
+      <dl className="grid grid-cols-2 gap-3">
+        <div className="border-l-2 border-fg-2 pl-3">
+          <dt className="label">{view.lastClose ? `${closeDay(view.lastClose.day)} close` : "Last close"}</dt>
+          <dd className="num text-[1.5rem] leading-tight text-fg">{close !== null ? usd(close) : "unavailable"}</dd>
+        </div>
+        <div className="border-l-2 border-dashed border-sodium pl-3">
+          <dt className="label text-sodium">Trigger</dt>
+          <dd className="num text-[1.5rem] leading-tight text-sodium">{trig !== null ? usd(trig) : "unavailable"}</dd>
+          {away !== null && <dd className="fig text-[0.75rem] text-sodium">{away >= 0 ? `${away.toFixed(1)}% away` : `${Math.abs(away).toFixed(1)}% past`}</dd>}
+        </div>
+      </dl>
+      <ol className="mt-5 divide-y divide-line border-y border-line">
+        {sorted.map((v) => {
+          const pick = view.pick?.symbol === v.symbol;
+          return (
+            <li key={v.address} className={cn("py-3.5", pick && "-mx-5 border-l-2 border-sodium bg-night-3/50 px-5")}>
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="fig min-w-0 text-[0.75rem]">
+                  <span className="font-bold text-fg">{v.symbol}</span> <span className="text-fg-3">{v.issuerLabel}</span>
+                </p>
+                <p className="num text-[1.5rem] leading-none text-fg">{usd(v.perShareUsd as number)}</p>
+              </div>
+              <div className="mt-1 flex items-baseline justify-between gap-3 text-[0.8125rem]">
+                <p className={cn("flex gap-1.5", v.tradable ? "text-sodium" : "text-fg-2")}>
+                  <span aria-hidden className="fig">{v.tradable ? "+" : "x"}</span>{shortReason(v)}
+                </p>
+                {close !== null && <p className="fig shrink-0 text-[0.75rem] text-fg-3">{(((v.perShareUsd as number) / close - 1) * 100).toFixed(2)}%</p>}
+              </div>
+              {pick && view.pick && <p className="mt-2 text-[0.8125rem] leading-snug text-fg"><span className="font-bold text-sodium">{view.pick.line}.</span> {view.pick.reason}</p>}
+              <a href={`https://bscscan.com/token/${v.address}`} target="_blank" rel="noreferrer" className="fig mt-1.5 inline-flex min-h-8 items-center text-[0.6875rem] text-fg-3 underline decoration-line-2 underline-offset-2 hover:text-sodium">
+                {v.address.slice(0, 6)}…{v.address.slice(-4)} on BscScan
+              </a>
+            </li>
+          );
+        })}
+      </ol>
+      {!view.pick && view.pickNote && <p className="mt-4 text-[0.8125rem] text-fg-2">{view.pickNote}</p>}
     </div>
   );
 }
