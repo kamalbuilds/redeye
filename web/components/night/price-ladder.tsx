@@ -5,7 +5,7 @@ import { Note } from "@/components/shared/page";
 import { istAndSgt, usd } from "@/lib/shared/format";
 import { cn } from "@/lib/utils";
 import type { RuleView, VersionRow } from "@/lib/redeye";
-import type { SlipState } from "./order-slip";
+import type { SlipState } from "./rule-console";
 
 const H = 540;
 const TOP = 28;
@@ -64,15 +64,8 @@ const shortReason = (v: VersionRow): string => {
 const closeDay = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" });
 
 export function PriceLadder({ state }: { state: SlipState }) {
-  if (state.kind === "loading") return <Frame><Ghost label="Pricing every tokenized version against the last close" pulse /></Frame>;
-  if (state.kind === "error") return <Frame><Ghost label="No rule on the ladder." /></Frame>;
-  if (state.kind === "idle") {
-    return (
-      <Frame>
-        <Ghost label="Read a rule and every tokenized version of the stock stands here at its live price, against the last close and your trigger." />
-      </Frame>
-    );
-  }
+  if (state.kind === "loading" || state.kind === "idle") return <Frame><Ghost label="Pricing every tokenized version against the last close" pulse /></Frame>;
+  if (state.kind === "error") return <Frame><Ghost label="Fix the rule on the left and the ladder redraws at live prices." /></Frame>;
   return <Frame sub={`Quotes requested ${istAndSgt(state.view.at)}. ${state.view.sizing.text}`}><Ladder view={state.view} /></Frame>;
 }
 

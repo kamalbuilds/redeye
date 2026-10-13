@@ -258,13 +258,13 @@ export function Replay({ proof }: { proof: Proof }) {
             </g>
           </svg>
           {!narrow && (
-            <div className="slip-wrap pointer-events-none absolute w-[17rem]" style={{ left: Math.min(fireX + 16, w - m.r - 280), bottom: axisH + 10 }}>
+            <div className="pointer-events-none absolute w-[17rem] shadow-[0_18px_40px_-12px_var(--night)]" style={{ left: Math.min(fireX + 16, w - m.r - 280), bottom: axisH + 10 }}>
               <FireSlip proof={proof} />
             </div>
           )}
         </div>
         {narrow && (
-          <div className="slip-wrap mt-4 w-full max-w-[20rem]">
+          <div className="mt-4 w-full max-w-[20rem]">
             <FireSlip proof={proof} />
           </div>
         )}
@@ -318,16 +318,16 @@ function Reading({ name, color, value, at, ring, none = "no candle yet" }: { nam
 function FireSlip({ proof }: { proof: Proof }) {
   const f = proof.fire;
   return (
-    <article className="slip slip-top slip-bottom px-4 pb-5 pt-5">
-      <p className="text-[0.6875rem] font-bold uppercase tracking-[0.16em]">Receipt, replayed</p>
+    <article className="border border-sodium/70 border-l-4 border-l-sodium bg-night px-4 pb-4 pt-3.5">
+      <p className="label text-sodium">Rule fired</p>
       <p className="mt-1.5 flex items-baseline gap-2">
-        <span className="num text-[1.5rem] leading-none">{clock(f.t, IST, { minutes: true })} IST</span>
-        <span className="text-[0.6875rem] text-ink-2">{clock(f.t, SGT, { minutes: true })} SGT</span>
+        <span className="num text-[1.5rem] leading-none text-fg">{clock(f.t, IST, { minutes: true })} IST</span>
+        <span className="fig text-[0.6875rem] text-fg-3">{clock(f.t, SGT, { minutes: true })} SGT</span>
       </p>
-      <p className="mt-2 text-[0.8125rem] font-bold leading-snug">Bought {f.symbol} at ${f.price.toFixed(2)}. You were asleep.</p>
-      <dl className="mt-2 space-y-1 border-t border-dashed border-ink/50 pt-2 text-[0.75rem] leading-snug">
-        <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2"><dt className="text-[0.6875rem] uppercase tracking-[0.12em] text-ink-2">Rule</dt><dd>{proof.rule.text}</dd></div>
-        <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2"><dt className="text-[0.6875rem] uppercase tracking-[0.12em] text-ink-2">Why</dt><dd>{f.reason}</dd></div>
+      <p className="mt-2 text-[0.875rem] font-medium leading-snug text-fg">Bought {f.symbol} at ${f.price.toFixed(2)}. You were asleep.</p>
+      <dl className="mt-2.5 space-y-1 border-t border-line-2 pt-2.5 text-[0.75rem] leading-snug text-fg-2">
+        <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2"><dt className="label">Rule</dt><dd className="fig">{proof.rule.text}</dd></div>
+        <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2"><dt className="label">Why</dt><dd>{f.reason}</dd></div>
       </dl>
     </article>
   );

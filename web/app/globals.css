@@ -1,6 +1,6 @@
-/* Hallmark · genre: atmospheric · macrostructure: Night strip + order slip + price ladder (bespoke apparatus page)
+/* Hallmark · genre: atmospheric · macrostructure: headline + rule console + live price ladder + night strip + receipt ledger (bespoke apparatus page)
  * theme: Lumen, Night Foundry drop, accent retuned to sodium-lamp amber · nav: N9 edge-aligned · footer: Ft5 statement
- * display: Libre Caslon Text (roman only) · body: Geist · slips and labels: Azeret Mono
+ * display: Libre Caslon Text (roman only) · body: Geist · rule console, ledger and labels: Azeret Mono
  */
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -28,13 +28,6 @@
   --series-ondo: var(--sodium);
   --series-bstocks: oklch(74% 0.09 235);
   --series-real: oklch(88% 0.01 262);
-
-  /* the paper object: order slips and receipts */
-  --paper: oklch(91% 0.03 88);
-  --paper-2: oklch(86% 0.035 85);
-  --paper-ink: oklch(25% 0.02 60);
-  --paper-ink-2: oklch(42% 0.02 60);
-  --paper-rule: oklch(25% 0.02 60 / 0.28);
 
   /* shadcn semantic names, mapped onto the night tokens */
   --background: var(--night);
@@ -91,11 +84,6 @@
   --color-sodium-soft: var(--sodium-soft);
   --color-sodium-ink: var(--sodium-ink);
   --color-fail: var(--fail);
-  --color-paper: var(--paper);
-  --color-paper-2: var(--paper-2);
-  --color-ink: var(--paper-ink);
-  --color-ink-2: var(--paper-ink-2);
-  --color-paper-rule: var(--paper-rule);
 
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-display), "Iowan Old Style", Georgia, serif;
@@ -157,34 +145,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* slip paper: a faint fibre texture from two stacked gradients, no image file */
-  .slip {
-    background-color: var(--paper);
-    background-image:
-      repeating-linear-gradient(0deg, oklch(25% 0.02 60 / 0.035) 0 1px, transparent 1px 3px),
-      linear-gradient(180deg, oklch(100% 0 0 / 0.35), transparent 14%);
-    color: var(--paper-ink);
-    font-family: var(--font-mono);
-  }
-  .slip-wrap {
-    filter: drop-shadow(0 1px 0 oklch(0% 0 0 / 0.5)) drop-shadow(0 16px 18px oklch(0% 0 0 / 0.45));
-  }
-  /* torn top and bottom edges: a repeating triangle mask */
-  .slip-top {
-    -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 12px 100%;
-    mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 12px 100%;
-  }
-  .slip-bottom {
-    -webkit-mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 50% / 12px 100%;
-    mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 50% / 12px 100%;
-  }
-  .perforation {
-    background-image: radial-gradient(circle at 50% 50%, var(--night) 0 2px, transparent 2.5px);
-    background-size: 10px 10px;
-    background-repeat: repeat-x;
-    background-position: 0 50%;
-  }
-
   /* the sleep hours: diagonal hatch on the strip */
   .hatch {
     background-image: repeating-linear-gradient(135deg, var(--line-2) 0 1px, transparent 1px 7px);
@@ -197,7 +157,7 @@
   }
 }
 
-/* printing a slip: lines arrive one after another, 90ms apart */
+/* a reading arrives line by line, 90ms apart */
 @keyframes feed {
   from { opacity: 0; transform: translateY(-3px); }
   to { opacity: 1; transform: none; }
@@ -216,21 +176,9 @@
   animation: lamp 2.6s ease-in-out infinite;
 }
 
-/* the stub tears off the slip once the rule is read */
-.stub {
-  transform-origin: 8% 0;
-  transition: transform 520ms var(--ease-out), opacity 320ms var(--ease-out);
-}
-.stub[data-torn="true"] {
-  transform: translate(10px, 22px) rotate(3.2deg);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .feed, .lamp {
     animation: none;
-  }
-  .stub {
-    transition: none;
   }
   * {
     scroll-behavior: auto !important;

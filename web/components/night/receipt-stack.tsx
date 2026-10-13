@@ -1,72 +1,105 @@
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { readDesk, type ReceiptRow, type WatchRow } from "@/lib/redeye";
+import { loadProof } from "@/lib/redeye-proof";
 import { storeFor, visitorFromCookie } from "@/lib/store";
 import { istAndSgt, usd, watchWindow } from "@/lib/shared/format";
+import { cn } from "@/lib/utils";
 
-const OUTCOME: Record<string, string> = {
-  no_fire: "Held. Trigger not met",
-  skipped: "Skipped",
-  dry_run: "Dry run. Nothing sent",
-  filled: "Filled",
-  failed: "Failed",
-  expired: "Expired",
+type Tone = "act" | "dry" | "hold" | "fail" | "watch";
+const OUTCOME: Record<string, { text: string; tone: Tone }> = {
+  no_fire: { text: "Held", tone: "hold" },
+  skipped: { text: "Skipped", tone: "hold" },
+  dry_run: { text: "Dry run", tone: "dry" },
+  filled: { text: "Filled", tone: "act" },
+  failed: { text: "Failed", tone: "fail" },
+  expired: { text: "Expired", tone: "hold" },
 };
-const TILT = [-0.7, 0.5, -0.3, 0.8, -0.5, 0.35];
-const SHOWN = 6;
+const GLYPH: Record<Tone, string> = { act: "+", dry: "~", hold: "-", fail: "x", watch: "o" };
+const SHOWN = 8;
 
-function Row({ k, children }: { k: string; children: React.ReactNode }) {
+function Badge({ tone, children }: { tone: Tone; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-x-2">
-      <dt className="text-[0.6875rem] uppercase tracking-[0.14em] text-ink-2">{k}</dt>
-      <dd className="break-words">{children}</dd>
-    </div>
+    <span
+      className={cn(
+        "fig inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-sm border px-2 text-[0.6875rem] font-bold uppercase tracking-[0.1em]",
+        tone === "act" && "border-sodium bg-sodium text-sodium-ink",
+        tone === "watch" && "border-sodium/60 text-sodium",
+        tone === "dry" && "border-fg-3 text-fg",
+        tone === "hold" && "border-line-2 text-fg-3",
+        tone === "fail" && "border-fail/70 text-fail",
+      )}
+    >
+      <span aria-hidden>{GLYPH[tone]}</span>
+      {children}
+    </span>
   );
 }
 
-function Watching({ w, now, i, total }: { w: WatchRow; now: number; i: number; total: number }) {
+const ROW = "grid gap-x-6 gap-y-1.5 border-b border-line px-1 py-4 transition-colors duration-150 hover:bg-night-2 md:grid-cols-[7.5rem_9rem_minmax(0,1fr)_6rem] md:items-baseline";
+
+function Watching({ w, now }: { w: WatchRow; now: number }) {
   return (
-    <li
-      className="slip-wrap relative -mt-3 first:mt-0"
-      style={{ zIndex: total - i, transform: `rotate(${TILT[i % TILT.length]}deg) translateX(${(i % 2 ? 1 : -1) * 3}px)` }}
-    >
-      <article className="slip slip-top slip-bottom px-5 pb-7 pt-7">
-        <p className="text-[0.75rem] font-bold uppercase tracking-[0.12em]">On watch</p>
-        <dl className="mt-2.5 space-y-1.5 border-t border-dashed border-ink/50 pt-2.5 text-[0.8125rem] leading-snug">
-          <Row k="Rule">{w.sentence}</Row>
-          <Row k="Watching">{watchWindow(w.startMs, w.endMs, now)}</Row>
-          <Row k="Left">{istAndSgt(w.since)}</Row>
-          <Row k="Id">{w.ruleId}</Row>
-        </dl>
-      </article>
+    <li className={ROW}>
+      <div><Badge tone="watch">On watch</Badge></div>
+      <p className="fig text-[0.8125rem] text-fg">{w.text.replace(/^if /, "")}</p>
+      <div className="min-w-0">
+        <p className="text-[0.9375rem] leading-snug text-fg">{w.sentence}</p>
+        <p className="mt-0.5 text-[0.8125rem] leading-snug text-fg-3">Watching {watchWindow(w.startMs, w.endMs, now)}. Left {istAndSgt(w.since)}.</p>
+      </div>
+      <p className="fig truncate text-[0.6875rem] text-fg-3 md:text-right" title={w.ruleId}>{w.ruleId.split("-").slice(0, 3).join(" ")}</p>
     </li>
   );
 }
 
-function Slip({ x, i, total }: { x: ReceiptRow; i: number; total: number }) {
+function Receipt({ x }: { x: ReceiptRow }) {
+  const o = x.outcome ? OUTCOME[x.outcome] ?? { text: x.outcome, tone: "hold" as Tone } : { text: "Unrecorded", tone: "hold" as Tone };
   const acted = x.outcome !== "no_fire" && x.outcome !== null;
   return (
-    <li
-      className="slip-wrap relative -mt-3 first:mt-0"
-      style={{ zIndex: total - i, transform: `rotate(${TILT[i % TILT.length]}deg) translateX(${(i % 2 ? 1 : -1) * 3}px)` }}
-    >
-      <article className="slip slip-top slip-bottom px-5 pb-7 pt-7">
-        <p className="text-[0.75rem] font-bold uppercase tracking-[0.12em]">{x.outcome ? OUTCOME[x.outcome] ?? x.outcome : "Outcome not recorded"}</p>
-        <dl className="mt-2.5 space-y-1.5 border-t border-dashed border-ink/50 pt-2.5 text-[0.8125rem] leading-snug">
-          <Row k="Time">{x.at ? istAndSgt(x.at) : "not recorded"}</Row>
-          <Row k="Rule">{x.ruleId ?? "not recorded"}</Row>
-          <Row k="Stock">
-            {x.symbol ?? x.ticker ?? "unknown"}
-            {acted && x.side ? `, ${x.side}` : ""}
-            {acted && x.usd !== null ? ` ${usd(x.usd)}` : ""}
-            {x.mode ? `, ${x.mode === "live" ? "live" : "dry"}` : ""}
-          </Row>
-          <Row k="Why">{x.reason ?? "No reason recorded."}</Row>
-        </dl>
-        {x.txHash && (
-          <a href={`https://bscscan.com/tx/${x.txHash}`} target="_blank" rel="noreferrer" className="mt-2 inline-flex min-h-11 items-center text-[0.8125rem] font-bold uppercase tracking-[0.12em] underline underline-offset-4">
-            BscScan
+    <li className={ROW}>
+      <div className="flex items-center gap-2 md:block">
+        <Badge tone={o.tone}>{o.text}</Badge>
+        {x.mode && <span className="fig text-[0.6875rem] uppercase tracking-[0.1em] text-fg-3 md:mt-1.5 md:block">{x.mode === "live" ? "live" : "no signing"}</span>}
+      </div>
+      <p className="fig text-[0.8125rem] text-fg">
+        {x.symbol ?? x.ticker ?? "unknown"}
+        {acted && x.side ? ` ${x.side}` : ""}
+        {acted && x.usd !== null ? ` ${usd(x.usd)}` : ""}
+      </p>
+      <div className="min-w-0">
+        <p className="text-[0.9375rem] leading-snug text-fg">{x.reason ?? "No reason recorded."}</p>
+        <p className="mt-0.5 text-[0.8125rem] text-fg-3">{x.at ? istAndSgt(x.at) : "time not recorded"}</p>
+      </div>
+      <div className="md:text-right">
+        {x.txHash ? (
+          <a href={`https://bscscan.com/tx/${x.txHash}`} target="_blank" rel="noreferrer" className="fig inline-flex min-h-11 items-center gap-1 text-[0.75rem] text-sodium underline-offset-4 hover:underline md:min-h-0">
+            {x.txHash.slice(0, 6)}…{x.txHash.slice(-4)} <ArrowUpRight aria-hidden className="size-3.5" />
           </a>
+        ) : (
+          <span className="fig text-[0.6875rem] text-fg-3">no tx</span>
         )}
-      </article>
+      </div>
+    </li>
+  );
+}
+
+/** With nothing run yet, the ledger opens on the one night that has been run: the recorded TSLA earnings, through the agent's own evaluate(). */
+async function Replayed() {
+  const p = await loadProof();
+  const f = p.fire;
+  return (
+    <li className={ROW}>
+      <div><Badge tone="act">Fired</Badge></div>
+      <p className="fig text-[0.8125rem] text-fg">{f.symbol} buy {usd(f.usd, 0)}</p>
+      <div className="min-w-0">
+        <p className="text-[0.9375rem] leading-snug text-fg">{f.reason}</p>
+        <p className="mt-0.5 text-[0.8125rem] text-fg-3">{istAndSgt(f.t)}, rule &ldquo;{p.rule.text}&rdquo; on the TSLA earnings night</p>
+      </div>
+      <div className="md:text-right">
+        <Link href="/proof" className="fig inline-flex min-h-11 items-center gap-1 text-[0.75rem] text-sodium underline-offset-4 hover:underline md:min-h-0">
+          Replay <ArrowUpRight aria-hidden className="size-3.5" />
+        </Link>
+      </div>
     </li>
   );
 }
@@ -74,40 +107,34 @@ function Slip({ x, i, total }: { x: ReceiptRow; i: number; total: number }) {
 export async function ReceiptStack({ now }: { now: number }) {
   const desk = await readDesk(await storeFor(await visitorFromCookie()), 20);
   const shown = desk.rows.slice(0, SHOWN);
-  const stack = desk.watching.length + shown.length;
+  const empty = desk.watching.length + shown.length === 0;
   return (
-    <section aria-labelledby="receipts" className="grid gap-x-16 gap-y-10 md:grid-cols-[22.5rem_minmax(0,1fr)]">
-      <div>
-        <h2 id="receipts" className="font-serif text-[2rem] leading-[1.08] md:text-[2.5rem]">Morning receipts</h2>
-        <p className="mt-3 max-w-[34ch] text-[0.9375rem] leading-snug text-fg-2">
-          What Redeye did while you slept, newest on top. Every receipt carries the rule id, the version it chose and one sentence on why.
-        </p>
-        {desk.error && <p role="alert" className="fig mt-4 text-[0.75rem] text-fail">Receipts could not be read: {desk.error}</p>}
+    <section aria-labelledby="receipts">
+      <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-3">
+        <div>
+          <h2 id="receipts" className="font-serif text-[2rem] leading-[1.08] md:text-[2.5rem]">Morning receipts</h2>
+          <p className="mt-3 max-w-[56ch] text-[0.9375rem] leading-snug text-fg-2">
+            {empty
+              ? "Your rules land here, newest first. Until one runs, this is the receipt the agent printed on the TSLA earnings night."
+              : "What Redeye did while you slept, newest first. Each line names the version it chose and why, in one sentence."}
+          </p>
+        </div>
+        {desk.total > SHOWN && <p className="fig text-[0.75rem] text-fg-3">{desk.total - SHOWN} older receipts kept</p>}
       </div>
+      {desk.error && <p role="alert" className="fig mt-4 text-[0.75rem] text-fail">Receipts could not be read: {desk.error}</p>}
 
-      <div className="w-full max-w-[22.5rem] py-2">
-        {stack === 0 ? (
-          <div className="slip-wrap">
-            <article className="slip slip-top slip-bottom px-5 pb-7 pt-7">
-              <p className="text-[0.75rem] font-bold uppercase tracking-[0.12em]">No receipt yet</p>
-              <p className="mt-3 text-[0.9375rem] font-bold leading-snug">Nothing has run yet. Leave a rule tonight.</p>
-              <dl aria-hidden className="mt-4 space-y-2.5 border-t border-dashed border-ink/50 pt-3">
-                {["Time", "Rule", "Stock", "Why"].map((k) => (
-                  <div key={k} className="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-x-2">
-                    <dt className="text-[0.6875rem] uppercase tracking-[0.14em] text-ink-2">{k}</dt>
-                    <dd className="mt-2 border-b border-dotted border-ink/40" />
-                  </div>
-                ))}
-              </dl>
-            </article>
-          </div>
-        ) : (
-          <ol aria-label="Receipts, newest first">
-            {desk.watching.map((w, i) => <Watching key={w.ruleId} w={w} now={now} i={i} total={stack} />)}
-            {shown.map((x, i) => <Slip key={`${x.ruleId}-${x.at}-${i}`} x={x} i={i + desk.watching.length} total={stack} />)}
-          </ol>
-        )}
-        {desk.total > SHOWN && <p className="fig mt-4 text-[0.75rem] text-fg-3">{desk.total - SHOWN} older receipts are kept.</p>}
+      <div className="mt-8 border-t border-line-2">
+        <div aria-hidden className="label hidden grid-cols-[7.5rem_9rem_minmax(0,1fr)_6rem] gap-x-6 border-b border-line px-1 py-2.5 md:grid">
+          <span>Outcome</span><span>Version</span><span>Why</span><span className="text-right">BscScan</span>
+        </div>
+        <ol aria-label="Receipts, newest first">
+          {empty ? <Replayed /> : (
+            <>
+              {desk.watching.map((w) => <Watching key={w.ruleId} w={w} now={now} />)}
+              {shown.map((x, i) => <Receipt key={`${x.ruleId}-${x.at}-${i}`} x={x} />)}
+            </>
+          )}
+        </ol>
       </div>
     </section>
   );

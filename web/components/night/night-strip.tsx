@@ -98,31 +98,35 @@ export function Tonight({ initialNow }: { initialNow: number }) {
 
   const headline = (
     <div>
-      <h1 id="night-h" className="max-w-[22ch] font-serif text-[2.25rem] leading-[1.05] tracking-[-0.015em] md:max-w-[24ch] md:text-[3.25rem]">
+      <h1 id="night-h" className="max-w-[22ch] font-serif text-[2.25rem] leading-[1.05] tracking-[-0.015em] md:max-w-[26ch] md:text-[3.25rem]">
         {watching
           ? <><span className="text-sodium">{duration(watchEnd - watchStart)}</span> of the US session lands while you sleep.</>
           : "The US session does not overlap your sleep tonight."}
       </h1>
+      <p className="mt-3 max-w-[64ch] text-[1.0625rem] leading-snug text-fg-2">
+        Leave Redeye one rule before bed. It watches every tokenized version of the stock on BNB Chain, Ondo, xStocks and bStocks, and acts on the one that can trade at the best price.
+      </p>
 
-      <div className="mt-4 max-w-[60ch] space-y-2" aria-live="polite">
-        {status.kind === "loading" && <p className="fig text-[0.8125rem] text-fg-3">Reading the Binance market status.</p>}
-        {status.kind === "error" && (
-          <>
-            <Note tone="warn">The Binance market status did not answer. The bands below come from the session clock alone.</Note>
-            {w.weekendShift && nextPre && (
-              <p className="text-[0.9375rem] text-fg-2">
-                The US market is shut. The next night opens {weekdayDate(nextPre.start, z)} at {clock(nextPre.start, z)} {z.id}.
-              </p>
-            )}
-          </>
-        )}
-        {status.kind === "ok" && <p className="fig text-[0.8125rem] leading-snug text-fg-2">{statusText(status.s, z)}</p>}
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-        <p className="label">
-          Night of {weekdayDate(w.start, z)}, {z.city} time
-        </p>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-x-8 gap-y-3 border-y border-line py-3">
+        <div className="min-w-0 max-w-[70ch] flex-1 space-y-2" aria-live="polite">
+          {status.kind === "loading" && <p className="fig text-[0.8125rem] text-fg-3">Reading the Binance market status.</p>}
+          {status.kind === "error" && (
+            <>
+              <Note tone="warn">The Binance market status did not answer. The bands below come from the session clock alone.</Note>
+              {w.weekendShift && nextPre && (
+                <p className="text-[0.9375rem] text-fg-2">
+                  The US market is shut. The next night opens {weekdayDate(nextPre.start, z)} at {clock(nextPre.start, z)} {z.id}.
+                </p>
+              )}
+            </>
+          )}
+          {status.kind === "ok" && (
+            <p className="fig flex gap-2.5 text-[0.8125rem] leading-snug text-fg-2">
+              <span aria-hidden className={cn("mt-[0.3rem] size-2 shrink-0 rounded-full", status.s.open ? "bg-sodium shadow-[0_0_8px_1px_var(--sodium-soft)]" : "bg-fg-3")} />
+              <span>{statusText(status.s, z)}</span>
+            </p>
+          )}
+        </div>
         <ToggleGroup
           aria-label="Time zone"
           value={[zoneId]}
@@ -159,6 +163,7 @@ export function Tonight({ initialNow }: { initialNow: number }) {
 
       <section aria-label="The night, hour by hour" className="relative border-b border-line">
         <div className="mx-auto max-w-[1180px] px-5 pb-12 pt-8 md:px-8">
+          <h2 className="label mb-5">Night of {weekdayDate(w.start, z)}, {z.city} time</h2>
           <p className="sr-only">
             US premarket {pre ? span(pre.start, pre.end, z) : "is closed"}, regular session {regular ? span(regular.start, regular.end, z) : "is closed"},
             after-hours {after ? span(after.start, after.end, z) : "is closed"}, all {z.id}. Sleep is {span(w.sleepStart, w.sleepEnd, z)}.
