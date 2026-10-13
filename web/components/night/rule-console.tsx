@@ -64,7 +64,7 @@ export function RuleConsole({ state, onRead, arm, onArm }: {
   const loading = state.kind === "loading";
 
   return (
-    <section aria-labelledby="console-h" className="border border-line-2 bg-night-2">
+    <section aria-labelledby="console-h" className="overflow-hidden rounded-lg border border-line-2 bg-night-2">
       <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5">
         <h2 id="console-h" className="label text-fg-2">Your rule</h2>
         <p className="label truncate">{done ? (done.parsedBy === "claude" ? "Read by Claude, schema-checked" : "Read by exact pattern") : "Plain English"}</p>

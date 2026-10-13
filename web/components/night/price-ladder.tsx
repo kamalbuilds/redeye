@@ -71,10 +71,15 @@ export function PriceLadder({ state }: { state: SlipState }) {
 
 function Frame({ children, sub }: { children: React.ReactNode; sub?: string }) {
   return (
-    <section aria-labelledby="ladder-h" className="min-w-0">
-      <h2 id="ladder-h" className="label">Price ladder, per share</h2>
-      {sub && <p className="fig mt-1 text-[0.75rem] text-fg-3">{sub}</p>}
-      <div className="mt-5">{children}</div>
+    <section aria-labelledby="ladder-h" className="min-w-0 rounded-lg border border-line-2 bg-night-2">
+      <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-2.5">
+        <h2 id="ladder-h" className="label text-fg-2">Price ladder, per share</h2>
+        <p className="label flex items-center gap-2"><span aria-hidden className="size-1.5 rounded-full bg-sodium" />BNB Chain, live</p>
+      </div>
+      <div className="px-5 pb-6 pt-4">
+        {sub && <p className="fig text-[0.75rem] leading-snug text-fg-3">{sub}</p>}
+        <div className="mt-5">{children}</div>
+      </div>
     </section>
   );
 }
@@ -200,7 +205,7 @@ function Ladder({ view }: { view: RuleView }) {
             aria-hidden
             className={cn(
               "absolute size-3 -translate-y-1/2 rounded-full",
-              v.tradable ? "bg-sodium shadow-[0_0_10px_1px_var(--sodium-soft)]" : "border-2 border-fg-3 bg-night",
+              v.tradable ? "bg-sodium shadow-[0_0_10px_1px_var(--sodium-soft)]" : "border-2 border-fg-3 bg-night-2",
               view.pick?.symbol === v.symbol && "outline outline-2 outline-offset-2 outline-sodium",
             )}
             style={{ left: railX + dotDx[i], top: dotY[i] }}
@@ -208,9 +213,12 @@ function Ladder({ view }: { view: RuleView }) {
         ))}
 
         {sorted.map((v, i) => (
-          <div key={v.address} className="absolute bg-night pr-2" style={{ left: labelX, maxWidth: `calc(100% - ${labelX}px)`, top: labelY[i] - 12 }}>
+          <div key={v.address} className="absolute bg-night-2 pr-2" style={{ left: labelX, maxWidth: `calc(100% - ${labelX}px)`, top: labelY[i] - 12 }}>
             <p className="fig text-[0.75rem] leading-tight">
-              <span className="font-bold text-fg">{v.symbol}</span> <span className="text-fg-3">{v.issuerLabel}</span>
+              <span className="font-bold text-fg">{v.symbol}</span> <span className="text-fg-3">{v.issuerLabel}</span>{" "}
+              <a href={`https://bscscan.com/token/${v.address}`} target="_blank" rel="noreferrer" className="text-fg-3 underline decoration-line-2 underline-offset-2 transition-colors duration-150 hover:text-sodium hover:decoration-sodium">
+                {v.address.slice(0, 6)}…{v.address.slice(-4)}
+              </a>
             </p>
             <p className="mt-0.5 flex flex-wrap items-baseline gap-x-2">
               <span className="num text-[1.75rem] leading-none text-fg md:text-[2rem]">{usd(v.perShareUsd as number)}</span>

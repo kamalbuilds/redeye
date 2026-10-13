@@ -15,7 +15,7 @@ const OUTCOME: Record<string, { text: string; tone: Tone }> = {
   failed: { text: "Failed", tone: "fail" },
   expired: { text: "Expired", tone: "hold" },
 };
-const GLYPH: Record<Tone, string> = { act: "+", dry: "~", hold: "-", fail: "x", watch: "o" };
+const GLYPH: Record<Tone, string> = { act: "+", dry: "~", hold: "-", fail: "x", watch: "" };
 const SHOWN = 8;
 
 function Badge({ tone, children }: { tone: Tone; children: React.ReactNode }) {
@@ -30,13 +30,13 @@ function Badge({ tone, children }: { tone: Tone; children: React.ReactNode }) {
         tone === "fail" && "border-fail/70 text-fail",
       )}
     >
-      <span aria-hidden>{GLYPH[tone]}</span>
+      {tone === "watch" ? <span aria-hidden className="live-dot size-1.5 rounded-full bg-sodium" /> : <span aria-hidden>{GLYPH[tone]}</span>}
       {children}
     </span>
   );
 }
 
-const ROW = "grid gap-x-6 gap-y-1.5 border-b border-line px-1 py-4 transition-colors duration-150 hover:bg-night-2 md:grid-cols-[7.5rem_9rem_minmax(0,1fr)_6rem] md:items-baseline";
+const ROW = "grid gap-x-6 gap-y-1.5 border-b border-line px-5 py-4 transition-colors duration-150 last:border-b-0 hover:bg-night-3 md:grid-cols-[7.5rem_9rem_minmax(0,1fr)_6rem] md:items-baseline";
 
 function Watching({ w, now }: { w: WatchRow; now: number }) {
   return (
@@ -47,7 +47,7 @@ function Watching({ w, now }: { w: WatchRow; now: number }) {
         <p className="text-[0.9375rem] leading-snug text-fg">{w.sentence}</p>
         <p className="mt-0.5 text-[0.8125rem] leading-snug text-fg-3">Watching {watchWindow(w.startMs, w.endMs, now)}. Left {istAndSgt(w.since)}.</p>
       </div>
-      <p className="fig truncate text-[0.6875rem] text-fg-3 md:text-right" title={w.ruleId}>{w.ruleId.split("-").slice(0, 3).join(" ")}</p>
+      <p className="fig text-[0.6875rem] text-fg-3 md:text-right">signs when it fires</p>
     </li>
   );
 }
@@ -107,15 +107,14 @@ async function Replayed() {
 export async function ReceiptStack({ now }: { now: number }) {
   const desk = await readDesk(await storeFor(await visitorFromCookie()), 20);
   const shown = desk.rows.slice(0, SHOWN);
-  const empty = desk.watching.length + shown.length === 0;
   return (
     <section aria-labelledby="receipts">
       <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-3">
         <div>
           <h2 id="receipts" className="font-serif text-[2rem] leading-[1.08] md:text-[2.5rem]">Morning receipts</h2>
           <p className="mt-3 max-w-[56ch] text-[0.9375rem] leading-snug text-fg-2">
-            {empty
-              ? "Your rules land here, newest first. Until one runs, this is the receipt the agent printed on the TSLA earnings night."
+            {shown.length === 0
+              ? "Your rules land here, newest first. Until one runs, the ledger carries the receipt the agent printed on the TSLA earnings night."
               : "What Redeye did while you slept, newest first. Each line names the version it chose and why, in one sentence."}
           </p>
         </div>
@@ -123,17 +122,14 @@ export async function ReceiptStack({ now }: { now: number }) {
       </div>
       {desk.error && <p role="alert" className="fig mt-4 text-[0.75rem] text-fail">Receipts could not be read: {desk.error}</p>}
 
-      <div className="mt-8 border-t border-line-2">
-        <div aria-hidden className="label hidden grid-cols-[7.5rem_9rem_minmax(0,1fr)_6rem] gap-x-6 border-b border-line px-1 py-2.5 md:grid">
+      <div className="mt-8 overflow-hidden rounded-lg border border-line-2 bg-night-2">
+        <div aria-hidden className="label hidden grid-cols-[7.5rem_9rem_minmax(0,1fr)_6rem] gap-x-6 border-b border-line px-5 py-2.5 md:grid">
           <span>Outcome</span><span>Version</span><span>Why</span><span className="text-right">BscScan</span>
         </div>
         <ol aria-label="Receipts, newest first">
-          {empty ? <Replayed /> : (
-            <>
-              {desk.watching.map((w) => <Watching key={w.ruleId} w={w} now={now} />)}
-              {shown.map((x, i) => <Receipt key={`${x.ruleId}-${x.at}-${i}`} x={x} />)}
-            </>
-          )}
+          {desk.watching.map((w) => <Watching key={w.ruleId} w={w} now={now} />)}
+          {shown.map((x, i) => <Receipt key={`${x.ruleId}-${x.at}-${i}`} x={x} />)}
+          {shown.length === 0 && <Replayed />}
         </ol>
       </div>
     </section>

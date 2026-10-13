@@ -48,7 +48,7 @@
   --border: var(--line);
   --input: var(--line-2);
   --ring: var(--sodium);
-  --radius: 0.125rem;
+  --radius: 0.375rem;
 }
 
 @theme inline {
@@ -90,10 +90,10 @@
   --font-mono: var(--font-azeret-mono), ui-monospace, "SF Mono", Menlo, monospace;
   --font-heading: var(--font-serif);
 
-  --radius-sm: 1px;
-  --radius-md: 2px;
-  --radius-lg: 2px;
-  --radius-xl: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
 
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -176,8 +176,17 @@
   animation: lamp 2.6s ease-in-out infinite;
 }
 
+/* the market is open: the status dot breathes like a standby light */
+@keyframes standby {
+  0%, 100% { box-shadow: 0 0 0 0 var(--sodium-soft); }
+  50% { box-shadow: 0 0 0 5px transparent; }
+}
+.live-dot {
+  animation: standby 2.4s var(--ease-out) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .feed, .lamp {
+  .feed, .lamp, .live-dot {
     animation: none;
   }
   * {

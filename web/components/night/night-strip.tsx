@@ -122,7 +122,7 @@ export function Tonight({ initialNow }: { initialNow: number }) {
           )}
           {status.kind === "ok" && (
             <p className="fig flex gap-2.5 text-[0.8125rem] leading-snug text-fg-2">
-              <span aria-hidden className={cn("mt-[0.3rem] size-2 shrink-0 rounded-full", status.s.open ? "bg-sodium shadow-[0_0_8px_1px_var(--sodium-soft)]" : "bg-fg-3")} />
+              <span aria-hidden className={cn("mt-[0.3rem] size-2 shrink-0 rounded-full", status.s.open ? "live-dot bg-sodium" : "bg-fg-3")} />
               <span>{statusText(status.s, z)}</span>
             </p>
           )}
@@ -191,7 +191,7 @@ export function Tonight({ initialNow }: { initialNow: number }) {
               })}
             </div>
 
-            <div className="relative h-[120px] overflow-hidden rounded-sm border border-line-2 bg-night-2 md:h-[150px]">
+            <div className="relative h-[120px] overflow-hidden rounded-lg border border-line-2 bg-night-2 md:h-[150px]">
               <div className="grid-plate absolute inset-0 opacity-60" />
               {ticks.map((t, i) => i > 0 && i < 24 && (
                 <span key={t} className={cn("absolute inset-y-0 w-px", i % 3 === 0 ? "bg-line-2" : "bg-line")} style={{ left: `${(i / 24) * 100}%` }} />
