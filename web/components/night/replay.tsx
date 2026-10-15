@@ -257,14 +257,14 @@ export function Replay({ proof }: { proof: Proof }) {
               {bs && <circle cx={x(bs.t)} cy={y(bs.v)} r="5" fill="var(--series-bstocks)" stroke="var(--night)" strokeWidth="2" />}
             </g>
           </svg>
-          {!narrow && (
-            <div className="pointer-events-none absolute w-[17rem] shadow-[0_18px_40px_-12px_var(--night)]" style={{ left: Math.min(fireX + 16, w - m.r - 280), bottom: axisH + 10 }}>
+          {!narrow && t >= proof.fire.t && (
+            <div className="feed pointer-events-none absolute w-[17rem] shadow-[0_18px_40px_-12px_var(--night)]" style={{ left: Math.min(fireX + 16, w - m.r - 280), bottom: axisH + 10 }}>
               <FireSlip proof={proof} />
             </div>
           )}
         </div>
-        {narrow && (
-          <div className="mt-4 w-full max-w-[20rem]">
+        {narrow && t >= proof.fire.t && (
+          <div className="feed mt-4 w-full max-w-[20rem]">
             <FireSlip proof={proof} />
           </div>
         )}
@@ -327,7 +327,7 @@ function FireSlip({ proof }: { proof: Proof }) {
       <p className="mt-2 text-[0.875rem] font-medium leading-snug text-fg">Would have bought {f.symbol} at ${f.price.toFixed(2)}. You were asleep.</p>
       <dl className="mt-2.5 space-y-1 border-t border-line-2 pt-2.5 text-[0.75rem] leading-snug text-fg-2">
         <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2"><dt className="label">Rule</dt><dd className="fig">{proof.rule.text}</dd></div>
-        <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2"><dt className="label">Why</dt><dd>{f.reason}</dd></div>
+        <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2"><dt className="label">Why</dt><dd>TSLA was down {Math.abs(proof.move.pct).toFixed(1)}% from the close, so the rule would have bought the {f.issuer === "bstocks" ? "bStocks" : f.issuer} version at ${f.price.toFixed(2)}.</dd></div>
       </dl>
     </article>
   );
