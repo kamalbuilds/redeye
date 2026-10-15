@@ -215,7 +215,7 @@ export function Tonight({ initialNow }: { initialNow: number }) {
                     "repeating-linear-gradient(135deg, oklch(14% 0.03 262 / 0.72) 0 2px, transparent 2px 8px), linear-gradient(oklch(14% 0.03 262 / 0.4), oklch(14% 0.03 262 / 0.4))",
                 }}
               >
-                <span className="label absolute bottom-2 left-2 whitespace-nowrap text-fg-2 md:bottom-auto md:top-2">Asleep<span className="max-md:hidden"> {span(w.sleepStart, w.sleepEnd, z)}</span></span>
+                <span className="label absolute bottom-2 left-2 whitespace-nowrap text-fg-2">Asleep<span className="max-md:hidden"> {span(w.sleepStart, w.sleepEnd, z)}</span></span>
               </div>
 
               {/* now: drifts along the night, one transform per half minute */}
