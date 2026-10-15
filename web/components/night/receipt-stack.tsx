@@ -89,10 +89,12 @@ async function Replayed() {
   const f = p.fire;
   return (
     <li className={ROW}>
-      <div><Badge tone="act">Fired</Badge></div>
+      <div><Badge tone="dry">Replayed</Badge></div>
       <p className="fig text-[0.8125rem] text-fg">{f.symbol} buy {usd(f.usd, 0)}</p>
       <div className="min-w-0">
-        <p className="text-[0.9375rem] leading-snug text-fg">{f.reason}</p>
+        <p className="text-[0.9375rem] leading-snug text-fg">
+          TSLA was down {Math.abs(p.move.pct).toFixed(1)}% from the close, so the rule went off and would have bought {f.symbol} at {usd(f.price)}.
+        </p>
         <p className="mt-0.5 text-[0.8125rem] text-fg-3">{istAndSgt(f.t)}, rule &ldquo;{p.rule.text}&rdquo; on the TSLA earnings night</p>
       </div>
       <div className="md:text-right">

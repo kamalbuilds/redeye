@@ -324,7 +324,7 @@ function FireSlip({ proof }: { proof: Proof }) {
         <span className="num text-[1.5rem] leading-none text-fg">{clock(f.t, IST, { minutes: true })} IST</span>
         <span className="fig text-[0.6875rem] text-fg-3">{clock(f.t, SGT, { minutes: true })} SGT</span>
       </p>
-      <p className="mt-2 text-[0.875rem] font-medium leading-snug text-fg">Bought {f.symbol} at ${f.price.toFixed(2)}. You were asleep.</p>
+      <p className="mt-2 text-[0.875rem] font-medium leading-snug text-fg">Would have bought {f.symbol} at ${f.price.toFixed(2)}. You were asleep.</p>
       <dl className="mt-2.5 space-y-1 border-t border-line-2 pt-2.5 text-[0.75rem] leading-snug text-fg-2">
         <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2"><dt className="label">Rule</dt><dd className="fig">{proof.rule.text}</dd></div>
         <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-2"><dt className="label">Why</dt><dd>{f.reason}</dd></div>
